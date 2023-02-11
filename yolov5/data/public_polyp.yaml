@@ -1,0 +1,7 @@
+path: /mnt/sda/zhouziyu/renji/data_processed/public_poly_dataset/
+train: images/train  # train images (relative to 'path') 128 images
+val: images/val  # val images (relative to 'path') 128 images
+test:  images/test
+
+nc: 1  # number of classes
+names: ['Polyp']
