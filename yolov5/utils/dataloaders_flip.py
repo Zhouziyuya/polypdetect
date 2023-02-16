@@ -103,7 +103,7 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 
-def create_dataloader(path,
+def create_dataloader_flip(path,
                       imgsz,
                       batch_size,
                       stride,
@@ -721,11 +721,16 @@ class LoadImagesAndLabels(Dataset):
         if nl:
             labels_out[:, 1:] = torch.from_numpy(labels)
 
+        # left and right flip
+        img_fliplr = np.fliplr(img)
+        img_fliplr = img_fliplr.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
+        img_fliplr = np.ascontiguousarray(img_fliplr)
+
         # Convert
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return torch.from_numpy(img), labels_out, self.im_files[index], shapes
+        return torch.from_numpy(img), torch.from_numpy(img_fliplr), labels_out, self.im_files[index], shapes
 
     def load_image(self, i):
         # Loads 1 image from dataset index 'i', returns (im, original hw, resized hw)
@@ -887,10 +892,10 @@ class LoadImagesAndLabels(Dataset):
 
     @staticmethod
     def collate_fn(batch):
-        im, label, path, shapes = zip(*batch)  # transposed
+        im, im_flip, label, path, shapes = zip(*batch)  # transposed
         for i, lb in enumerate(label):
             lb[:, 0] = i  # add target image index for build_targets()
-        return torch.stack(im, 0), torch.cat(label, 0), path, shapes
+        return torch.stack(im, 0), torch.stack(im_flip, 0), torch.cat(label, 0), path, shapes
 
     @staticmethod
     def collate_fn4(batch):

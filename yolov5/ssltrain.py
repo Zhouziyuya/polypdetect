@@ -47,6 +47,7 @@ from utils.autoanchor import check_anchors
 from utils.autobatch import check_train_batch_size
 from utils.callbacks import Callbacks
 from utils.dataloaders import create_dataloader
+from utils.dataloaders_flip import create_dataloader_flip
 from utils.downloads import attempt_download, is_url
 from utils.general import (LOGGER, TQDM_BAR_FORMAT, check_amp, check_dataset,
                            check_file, check_git_info, check_git_status,
@@ -64,12 +65,25 @@ from utils.plots import plot_evolve
 from utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel,
                                select_device, smart_DDP, smart_optimizer,
                                smart_resume, torch_distributed_zero_first)
+from timm.utils import NativeScaler
 
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
 RANK = int(os.getenv('RANK', -1))
 WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 GIT_INFO = check_git_info()
 
+def cosine_scheduler(base_value, final_value, epochs, niter_per_ep, warmup_epochs=0, start_warmup_value=0):
+    warmup_schedule = np.array([])
+    warmup_iters = warmup_epochs * niter_per_ep
+    if warmup_epochs > 0:
+        warmup_schedule = np.linspace(start_warmup_value, base_value, warmup_iters)
+
+    iters = np.arange(epochs * niter_per_ep - warmup_iters)
+    schedule = final_value + 0.5 * (base_value - final_value) * (1 + np.cos(np.pi * iters / len(iters)))
+
+    schedule = np.concatenate((warmup_schedule, schedule))
+    assert len(schedule) == epochs * niter_per_ep
+    return schedule
 
 def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictionary
     save_dir, epochs, batch_size, weights, single_cls, evolve, data, cfg, resume, noval, nosave, workers, freeze = \
@@ -134,6 +148,12 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         LOGGER.info(f'Transferred {len(csd)}/{len(model.state_dict())} items from {weights}')  # report
     else:
         model = Model(cfg, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
+    teacher = Model(cfg, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)
+    # Initialize the teacher network to have the same parameters as the student network
+    for param_q, param_k in zip(model.parameters(), teacher.parameters()):
+        param_k.data.mul_(0).add_(param_q.detach().data)
+    for p in teacher.parameters():
+        p.requires_grad = False
     amp = check_amp(model)  # check AMP
 
     # Freeze
@@ -189,7 +209,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         LOGGER.info('Using SyncBatchNorm()')
 
     # Trainloader
-    train_loader, dataset = create_dataloader(train_path,
+    train_loader, dataset = create_dataloader_flip(train_path,
                                               imgsz,
                                               batch_size // WORLD_SIZE,
                                               gs,
@@ -211,7 +231,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
     # Process 0
     if RANK in {-1, 0}:
-        val_loader = create_dataloader(val_path,
+        val_loader = create_dataloader_flip(val_path,
                                        imgsz,
                                        batch_size // WORLD_SIZE * 2,
                                        gs,
@@ -256,13 +276,26 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     results = (0, 0, 0, 0, 0, 0, 0)  # P, R, mAP@.5, mAP@.5-.95, val_loss(box, obj, cls)
     scheduler.last_epoch = start_epoch - 1  # do not move
     scaler = torch.cuda.amp.GradScaler(enabled=amp)
+    loss_scaler = NativeScaler()
     stopper, stop = EarlyStopping(patience=opt.patience), False
     compute_loss = ComputeLoss(model)  # init loss class
+    kldivloss = nn.KLDivLoss(log_target=True, reduction='batchmean').to(device)
+    mseloss = nn.MSELoss().to(device)
+    # momentum parameter is increased to 1. during training with a cosine schedule
+    momentum_schedule = cosine_scheduler(0.999, 1, epochs, len(train_loader))
     callbacks.run('on_train_start')
     LOGGER.info(f'Image sizes {imgsz} train, {imgsz} val\n'
                 f'Using {train_loader.num_workers * WORLD_SIZE} dataloader workers\n'
                 f"Logging results to {colorstr('bold', save_dir)}\n"
                 f'Starting training for {epochs} epochs...')
+    
+    # consistency loss values are saved in the txt
+    if os.path.exists(os.path.join(save_dir, "consis_loss.txt")):
+        log_writter = open(os.path.join(save_dir, "consis_loss.txt"), 'a')
+    else:
+        log_writter = open(os.path.join(save_dir, "consis_loss.txt"), 'w')
+    print('epoch  itera  total_loss  loss_sup  loss_consis  consis_conf_loss1 consis_conf_loss2 consis_conf_loss3 consis_x consis_ywh', file=log_writter)
+    
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         callbacks.run('on_train_epoch_start')
         model.train()
@@ -284,11 +317,12 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         LOGGER.info(('\n' + '%11s' * 7) % ('Epoch', 'GPU_mem', 'box_loss', 'obj_loss', 'cls_loss', 'Instances', 'Size'))
         if RANK in {-1, 0}:
             pbar = tqdm(pbar, total=nb, bar_format=TQDM_BAR_FORMAT)  # progress bar
-        optimizer.zero_grad()
-        for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
+        
+        for i, (imgs, imgs_flip, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
             callbacks.run('on_train_batch_start')
-            ni = i + nb * epoch  # number integrated batches (since train start)
+            ni = i + nb * epoch  # number integrated batches (since train start) iteration
             imgs = imgs.to(device, non_blocking=True).float() / 255  # uint8 to float32, 0-255 to 0.0-1.0
+            imgs_flip = imgs_flip.to(device, non_blocking=True).float() / 255
 
             # Warmup
             if ni <= nw:
@@ -312,21 +346,82 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
             # Forward
             with torch.cuda.amp.autocast(amp):
                 pred = model(imgs)  # forward
-                loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
+                pred_flip = teacher(imgs_flip) # {[16,3,80,80,6], [16,3,40,40,6], [16,3,20,20,6]}
+
+                pred_flip_consis = pred_flip
+                for i in range(3):
+                    w = pred[i].shape[2]
+                    for j in range(w):
+                        pred_flip_consis[i][:,:,j,:,:] = pred_flip[i][:,:,w-1-j,:,:]
+
+                # supervised loss
+                loss_sup, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                 if RANK != -1:
-                    loss *= WORLD_SIZE  # gradient averaged between devices in DDP mode
+                    loss_sup *= WORLD_SIZE  # gradient averaged between devices in DDP mode
                 if opt.quad:
-                    loss *= 4.
+                    loss_sup *= 4.
+                
+                # consistency loss 训练的输出没经过sigmoid
+                pred[0][:,:,:,:,4] = pred[0][:,:,:,:,4].sigmoid()
+                pred[1][:,:,:,:,4] = pred[1][:,:,:,:,4].sigmoid()
+                pred[2][:,:,:,:,4] = pred[2][:,:,:,:,4].sigmoid()
+
+                conf_threshold = 0.5
+                conf_mask1 = pred[0][:,:,:,:,4]>conf_threshold
+                conf_mask2 = pred[1][:,:,:,:,4]>conf_threshold
+                conf_mask3 = pred[2][:,:,:,:,4]>conf_threshold
+
+                conf_mask1 = conf_mask1.unsqueeze(4).expand_as(pred[0])
+                conf_mask2 = conf_mask2.unsqueeze(4).expand_as(pred[1])
+                conf_mask3 = conf_mask3.unsqueeze(4).expand_as(pred[2])
+
+                pred[0] = pred[0]*conf_mask1
+                pred[1] = pred[1]*conf_mask2
+                pred[2] = pred[2]*conf_mask3
+
+                pred_flip_consis[0] = pred_flip_consis[0]*conf_mask1
+                pred_flip_consis[1] = pred_flip_consis[1]*conf_mask2
+                pred_flip_consis[2] = pred_flip_consis[2]*conf_mask3
+
+
+                # confidence = (pred_flip[0][:,:,:,:,4].sum().mean()+pred_flip[1][:,:,:,:,4].sum().mean()+pred_flip[2][:,:,:,:,4].sum().mean())/3
+                # consis_conf_loss1 = kldivloss(pred[0][:,:,:,:,4], pred_flip_consis[0][:,:,:,:,4])
+                consis_conf_loss1 = (kldivloss(pred[0][:,:,:,:,4], pred_flip_consis[0][:,:,:,:,4])+ \
+                                        kldivloss(pred_flip_consis[0][:,:,:,:,4], pred[0][:,:,:,:,4]))/2
+                consis_conf_loss2 = (kldivloss(pred[1][:,:,:,:,4], pred_flip_consis[1][:,:,:,:,4])+ \
+                                        kldivloss(pred_flip_consis[1][:,:,:,:,4], pred[1][:,:,:,:,4]))/2
+                consis_conf_loss3 = (kldivloss(pred[2][:,:,:,:,4], pred_flip_consis[2][:,:,:,:,4])+ \
+                                        kldivloss(pred_flip_consis[2][:,:,:,:,4], pred[2][:,:,:,:,4]))/2
+
+                consis_x = mseloss(pred[0][:,:,:,:,0], -pred_flip_consis[0][:,:,:,:,0])+mseloss(pred[1][:,:,:,:,0], -pred_flip_consis[1][:,:,:,:,0])+mseloss(pred[2][:,:,:,:,0], -pred_flip_consis[2][:,:,:,:,0])
+                consis_ywh = mseloss(pred[0][:,:,:,:,1:4], pred_flip_consis[0][:,:,:,:,1:4])+mseloss(pred[1][:,:,:,:,1:4], -pred_flip_consis[1][:,:,:,:,1:4])+mseloss(pred[2][:,:,:,:,1:4], -pred_flip_consis[2][:,:,:,:,1:4])
+                loss_consis = consis_conf_loss1+consis_conf_loss2+consis_conf_loss3+consis_x+consis_ywh
+
+                loss = loss_consis+loss_sup
+
+                print(f'epoch{epoch}/ itera{ni}: {loss} {loss_sup} {loss_consis} {consis_conf_loss1} {consis_conf_loss2} {consis_conf_loss3} {consis_x} {consis_ywh}', file=log_writter)
+                log_writter.flush()
 
             # Backward
-            scaler.scale(loss).backward()
+            optimizer.zero_grad()
+            is_second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
+            loss_scaler(loss, optimizer, clip_grad=None,
+                    parameters=model.parameters(), create_graph=is_second_order)
+            # scaler.scale(loss).backward()
+
+            # EMA update for the teacher
+            with torch.no_grad():
+                m = momentum_schedule[ni]  # momentum parameter
+                for param_q, param_k in zip(model.parameters(), teacher.parameters()):
+                    param_k.data.mul_(m).add_((1 - m) * param_q.detach().data)
+
 
             # Optimize - https://pytorch.org/docs/master/notes/amp_examples.html
             if ni - last_opt_step >= accumulate:
-                scaler.unscale_(optimizer)  # unscale gradients
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=10.0)  # clip gradients
-                scaler.step(optimizer)  # optimizer.step
-                scaler.update()
+                # scaler.unscale_(optimizer)  # unscale gradients
+                # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=10.0)  # clip gradients
+                # scaler.step(optimizer)  # optimizer.step
+                # scaler.update()
                 optimizer.zero_grad()
                 if ema:
                     ema.update(model)
@@ -442,7 +537,7 @@ def parse_opt(known=False):
     parser.add_argument('--cfg', type=str, default='models/yolov5s.yaml', help='model.yaml path')
     parser.add_argument('--data', type=str, default='data/public_polyp.yaml', help='dataset.yaml path')
     parser.add_argument('--hyp', type=str, default='data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
-    parser.add_argument('--epochs', type=int, default=200, help='total training epochs')
+    parser.add_argument('--epochs', type=int, default=100, help='total training epochs')
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
@@ -455,14 +550,14 @@ def parse_opt(known=False):
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
     parser.add_argument('--cache', type=str, nargs='?', const='ram', help='image --cache ram/disk')
     parser.add_argument('--image-weights', action='store_true', help='use weighted image selection for training')
-    parser.add_argument('--device', default='1', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='4', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true', help='vary img-size +/- 50%%')
     parser.add_argument('--single-cls', action='store_true', help='train multi-class data as single-class')
     parser.add_argument('--optimizer', type=str, choices=['SGD', 'Adam', 'AdamW'], default='SGD', help='optimizer')
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--project', default=ROOT / 'runs/train', help='save to project/name')
-    parser.add_argument('--name', default='exp', help='save to project/name')
+    parser.add_argument('--name', default='consis_conf0.5_mask', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--quad', action='store_true', help='quad dataloader')
     parser.add_argument('--cos-lr', action='store_true', help='cosine LR scheduler')
