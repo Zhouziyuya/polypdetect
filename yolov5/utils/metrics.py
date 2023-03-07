@@ -43,8 +43,8 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
     """
 
     # Sort by objectness
-    i = np.argsort(-conf)
-    tp, conf, pred_cls = tp[i], conf[i], pred_cls[i]
+    i = np.argsort(-conf) # conf从大到小排列对应的索引
+    tp, conf, pred_cls = tp[i], conf[i], pred_cls[i] # tp：不同iou thereshold对应检测结果是true还是false
 
     # Find unique classes
     unique_classes, nt = np.unique(target_cls, return_counts=True)
@@ -52,7 +52,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
 
     # Create Precision-Recall curve and compute AP for each class
     px, py = np.linspace(0, 1, 1000), []  # for plotting
-    ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000))
+    ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000)) # tp.shape[1]: [number of detections, 10]
     for ci, c in enumerate(unique_classes):
         i = pred_cls == c
         n_l = nt[ci]  # number of labels
@@ -62,7 +62,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
 
         # Accumulate FPs and TPs
         fpc = (1 - tp[i]).cumsum(0)
-        tpc = tp[i].cumsum(0)
+        tpc = tp[i].cumsum(0) # cumsum(0)维度0上的累计和
 
         # Recall
         recall = tpc / (n_l + eps)  # recall curve
@@ -70,7 +70,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
 
         # Precision
         precision = tpc / (tpc + fpc)  # precision curve
-        p[ci] = np.interp(-px, -conf[i], precision[:, 0], left=1)  # p at pr_score
+        p[ci] = np.interp(-px, -conf[i], precision[:, 0], left=1)  # p at pr_score iou阈值为0.5
 
         # AP from recall-precision curve
         for j in range(tp.shape[1]):

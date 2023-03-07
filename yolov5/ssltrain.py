@@ -59,7 +59,7 @@ from utils.general import (LOGGER, TQDM_BAR_FORMAT, check_amp, check_dataset,
                            strip_optimizer, yaml_save)
 from utils.loggers import Loggers
 from utils.loggers.comet.comet_utils import check_comet_resume
-from utils.loss import ComputeLoss
+from utils.loss import ComputeLoss, ConsistencyLossLR, ConsistencyLossUD
 from utils.metrics import fitness
 from utils.plots import plot_evolve
 from utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel,
@@ -279,6 +279,10 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     loss_scaler = NativeScaler()
     stopper, stop = EarlyStopping(patience=opt.patience), False
     compute_loss = ComputeLoss(model)  # init loss class
+    if opt.consis_mode == 'lr':
+        consistency_loss = ConsistencyLossLR(model)
+    elif opt.consis_mode == 'ud':
+        consistency_loss = ConsistencyLossUD(model)
     kldivloss = nn.KLDivLoss(log_target=True, reduction='batchmean').to(device)
     mseloss = nn.MSELoss().to(device)
     # momentum parameter is increased to 1. during training with a cosine schedule
@@ -294,7 +298,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         log_writter = open(os.path.join(save_dir, "consis_loss.txt"), 'a')
     else:
         log_writter = open(os.path.join(save_dir, "consis_loss.txt"), 'w')
-    print('epoch  itera  total_loss  loss_sup  loss_consis  consis_conf_loss1 consis_conf_loss2 consis_conf_loss3 consis_x consis_ywh', file=log_writter)
+    print('epoch  itera  total_loss  loss_sup  loss_consis  consis_conf consis_x consis_ywh', file=log_writter)
     
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         callbacks.run('on_train_epoch_start')
@@ -318,11 +322,12 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         if RANK in {-1, 0}:
             pbar = tqdm(pbar, total=nb, bar_format=TQDM_BAR_FORMAT)  # progress bar
         
-        for i, (imgs, imgs_flip, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
+        for i, (imgs, imgs_fliplr, imgs_flipud, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
             callbacks.run('on_train_batch_start')
             ni = i + nb * epoch  # number integrated batches (since train start) iteration
             imgs = imgs.to(device, non_blocking=True).float() / 255  # uint8 to float32, 0-255 to 0.0-1.0
-            imgs_flip = imgs_flip.to(device, non_blocking=True).float() / 255
+            imgs_fliplr = imgs_fliplr.to(device, non_blocking=True).float() / 255
+            imgs_flipud = imgs_flipud.to(device, non_blocking=True).float() / 255
 
             # Warmup
             if ni <= nw:
@@ -346,13 +351,12 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
             # Forward
             with torch.cuda.amp.autocast(amp):
                 pred = model(imgs)  # forward
-                pred_flip = teacher(imgs_flip) # {[16,3,80,80,6], [16,3,40,40,6], [16,3,20,20,6]}
+                if opt.consis_mode == 'lr':
+                    pred_flip = teacher(imgs_fliplr) # {[16,3,80,80,6], [16,3,40,40,6], [16,3,20,20,6]}
+                elif opt.consis_mode == 'ud':
+                    pred_flip = teacher(imgs_flipud)
 
-                pred_flip_consis = pred_flip
-                for i in range(3):
-                    w = pred[i].shape[2]
-                    for j in range(w):
-                        pred_flip_consis[i][:,:,j,:,:] = pred_flip[i][:,:,w-1-j,:,:]
+                loss_consis, loss_consis_items= consistency_loss(pred, pred_flip, targets.to(device))
 
                 # supervised loss
                 loss_sup, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
@@ -360,46 +364,10 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                     loss_sup *= WORLD_SIZE  # gradient averaged between devices in DDP mode
                 if opt.quad:
                     loss_sup *= 4.
-                
-                # consistency loss 训练的输出没经过sigmoid
-                pred[0][:,:,:,:,4] = pred[0][:,:,:,:,4].sigmoid()
-                pred[1][:,:,:,:,4] = pred[1][:,:,:,:,4].sigmoid()
-                pred[2][:,:,:,:,4] = pred[2][:,:,:,:,4].sigmoid()
-
-                conf_threshold = 0.5
-                conf_mask1 = pred[0][:,:,:,:,4]>conf_threshold
-                conf_mask2 = pred[1][:,:,:,:,4]>conf_threshold
-                conf_mask3 = pred[2][:,:,:,:,4]>conf_threshold
-
-                conf_mask1 = conf_mask1.unsqueeze(4).expand_as(pred[0])
-                conf_mask2 = conf_mask2.unsqueeze(4).expand_as(pred[1])
-                conf_mask3 = conf_mask3.unsqueeze(4).expand_as(pred[2])
-
-                pred[0] = pred[0]*conf_mask1
-                pred[1] = pred[1]*conf_mask2
-                pred[2] = pred[2]*conf_mask3
-
-                pred_flip_consis[0] = pred_flip_consis[0]*conf_mask1
-                pred_flip_consis[1] = pred_flip_consis[1]*conf_mask2
-                pred_flip_consis[2] = pred_flip_consis[2]*conf_mask3
-
-
-                # confidence = (pred_flip[0][:,:,:,:,4].sum().mean()+pred_flip[1][:,:,:,:,4].sum().mean()+pred_flip[2][:,:,:,:,4].sum().mean())/3
-                # consis_conf_loss1 = kldivloss(pred[0][:,:,:,:,4], pred_flip_consis[0][:,:,:,:,4])
-                consis_conf_loss1 = (kldivloss(pred[0][:,:,:,:,4], pred_flip_consis[0][:,:,:,:,4])+ \
-                                        kldivloss(pred_flip_consis[0][:,:,:,:,4], pred[0][:,:,:,:,4]))/2
-                consis_conf_loss2 = (kldivloss(pred[1][:,:,:,:,4], pred_flip_consis[1][:,:,:,:,4])+ \
-                                        kldivloss(pred_flip_consis[1][:,:,:,:,4], pred[1][:,:,:,:,4]))/2
-                consis_conf_loss3 = (kldivloss(pred[2][:,:,:,:,4], pred_flip_consis[2][:,:,:,:,4])+ \
-                                        kldivloss(pred_flip_consis[2][:,:,:,:,4], pred[2][:,:,:,:,4]))/2
-
-                consis_x = mseloss(pred[0][:,:,:,:,0], -pred_flip_consis[0][:,:,:,:,0])+mseloss(pred[1][:,:,:,:,0], -pred_flip_consis[1][:,:,:,:,0])+mseloss(pred[2][:,:,:,:,0], -pred_flip_consis[2][:,:,:,:,0])
-                consis_ywh = mseloss(pred[0][:,:,:,:,1:4], pred_flip_consis[0][:,:,:,:,1:4])+mseloss(pred[1][:,:,:,:,1:4], -pred_flip_consis[1][:,:,:,:,1:4])+mseloss(pred[2][:,:,:,:,1:4], -pred_flip_consis[2][:,:,:,:,1:4])
-                loss_consis = consis_conf_loss1+consis_conf_loss2+consis_conf_loss3+consis_x+consis_ywh
 
                 loss = loss_consis+loss_sup
 
-                print(f'epoch{epoch}/ itera{ni}: {loss} {loss_sup} {loss_consis} {consis_conf_loss1} {consis_conf_loss2} {consis_conf_loss3} {consis_x} {consis_ywh}', file=log_writter)
+                print(f'epoch{epoch}/ itera{ni}: {loss} {loss_sup} {loss_consis} {loss_consis_items[0]} {loss_consis_items[1]} {loss_consis_items[2]}', file=log_writter)
                 log_writter.flush()
 
             # Backward
@@ -448,7 +416,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
             ema.update_attr(model, include=['yaml', 'nc', 'hyp', 'names', 'stride', 'class_weights'])
             final_epoch = (epoch + 1 == epochs) or stopper.possible_stop
             if not noval or final_epoch:  # Calculate mAP
-                results, maps, _ = validate.run(data_dict,
+                results, maps, _ = validate.run(opt.consis_mode,
+                                                data_dict,
                                                 batch_size=batch_size // WORLD_SIZE * 2,
                                                 imgsz=imgsz,
                                                 half=amp,
@@ -533,11 +502,12 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
+    parser.add_argument('--consis_mode', type=str, default='ud', help='lr or ud, left and right or up and down')
     parser.add_argument('--weights', type=str, default='trained_model/yolov5s.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='models/yolov5s.yaml', help='model.yaml path')
     parser.add_argument('--data', type=str, default='data/public_polyp.yaml', help='dataset.yaml path')
     parser.add_argument('--hyp', type=str, default='data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
-    parser.add_argument('--epochs', type=int, default=100, help='total training epochs')
+    parser.add_argument('--epochs', type=int, default=50, help='total training epochs')
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
@@ -550,14 +520,14 @@ def parse_opt(known=False):
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
     parser.add_argument('--cache', type=str, nargs='?', const='ram', help='image --cache ram/disk')
     parser.add_argument('--image-weights', action='store_true', help='use weighted image selection for training')
-    parser.add_argument('--device', default='4', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='1', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true', help='vary img-size +/- 50%%')
     parser.add_argument('--single-cls', action='store_true', help='train multi-class data as single-class')
     parser.add_argument('--optimizer', type=str, choices=['SGD', 'Adam', 'AdamW'], default='SGD', help='optimizer')
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--project', default=ROOT / 'runs/train', help='save to project/name')
-    parser.add_argument('--name', default='consis_conf0.5_mask', help='save to project/name')
+    parser.add_argument('--name', default='consis_updown', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--quad', action='store_true', help='quad dataloader')
     parser.add_argument('--cos-lr', action='store_true', help='cosine LR scheduler')

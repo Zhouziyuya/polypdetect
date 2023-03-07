@@ -132,11 +132,11 @@ class ComputeLoss:
             n = b.shape[0]  # number of targets
             if n:
                 # pxy, pwh, _, pcls = pi[b, a, gj, gi].tensor_split((2, 4, 5), dim=1)  # faster, requires torch 1.8.0
-                pxy, pwh, _, pcls = pi[b, a, gj, gi].split((2, 2, 1, self.nc), 1)  # target-subset of predictions
+                pxy, pwh, _, pcls = pi[b, a, gj, gi].split((2, 2, 1, self.nc), 1)  # target-subset of predictions, pi[b, a, gj, gi]:[topk,6]
 
                 # Regression
                 pxy = pxy.sigmoid() * 2 - 0.5
-                pwh = (pwh.sigmoid() * 2) ** 2 * anchors[i]
+                pwh = (pwh.sigmoid() * 2) ** 2 * anchors[i] # 
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 iou = bbox_iou(pbox, tbox[i], CIoU=True).squeeze()  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
@@ -176,7 +176,7 @@ class ComputeLoss:
 
     def build_targets(self, p, targets):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
-        na, nt = self.na, targets.shape[0]  # number of anchors, targets
+        na, nt = self.na, targets.shape[0]  # number of anchors, numbers of targets 
         tcls, tbox, indices, anch = [], [], [], []
         gain = torch.ones(7, device=self.device)  # normalized to gridspace gain
         ai = torch.arange(na, device=self.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
@@ -194,7 +194,7 @@ class ComputeLoss:
             ],
             device=self.device).float() * g  # offsets
 
-        for i in range(self.nl):
+        for i in range(self.nl): # self.nl: number of layers
             anchors, shape = self.anchors[i], p[i].shape
             gain[2:6] = torch.tensor(shape)[[3, 2, 3, 2]]  # xyxy gain
 
@@ -205,15 +205,15 @@ class ComputeLoss:
                 r = t[..., 4:6] / anchors[:, None]  # wh ratio
                 j = torch.max(r, 1 / r).max(2)[0] < self.hyp['anchor_t']  # compare
                 # j = wh_iou(anchors, t[:, 4:6]) > model.hyp['iou_t']  # iou(3,n)=wh_iou(anchors(3,2), gwh(n,2))
-                t = t[j]  # filter
+                t = t[j]  # filter 过滤掉宽高比超过阈值的targets
 
                 # Offsets
-                gxy = t[:, 2:4]  # grid xy
+                gxy = t[:, 2:4]  # grid xy, x center, y center
                 gxi = gain[[2, 3]] - gxy  # inverse
                 j, k = ((gxy % 1 < g) & (gxy > 1)).T
                 l, m = ((gxi % 1 < g) & (gxi > 1)).T
                 j = torch.stack((torch.ones_like(j), j, k, l, m))
-                t = t.repeat((5, 1, 1))[j]
+                t = t.repeat((5, 1, 1))[j] # 在channel方向复制5倍，行方向复制1倍，列方向复制1倍 t:[5,n,7]
                 offsets = (torch.zeros_like(gxy)[None] + off[:, None])[j]
             else:
                 t = targets[0]
@@ -222,13 +222,97 @@ class ComputeLoss:
             # Define
             bc, gxy, gwh, a = t.chunk(4, 1)  # (image, class), grid xy, grid wh, anchors
             a, (b, c) = a.long().view(-1), bc.long().T  # anchors, image, class
-            gij = (gxy - offsets).long()
+            gij = (gxy - offsets).long() # 相对左上角的偏移！！
             gi, gj = gij.T  # grid indices
 
             # Append
-            indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid
-            tbox.append(torch.cat((gxy - gij, gwh), 1))  # box
-            anch.append(anchors[a])  # anchors
+            indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image索引, anchor索引, targets正样本的grid索引
+            tbox.append(torch.cat((gxy - gij, gwh), 1))  
+            anch.append(anchors[a])  # anchors targets正样本对应的anchor
             tcls.append(c)  # class
 
         return tcls, tbox, indices, anch
+
+class ConsistencyLossLR:
+    def __init__(self, model):
+        device = next(model.parameters()).device  # get model device
+        self.kldivloss = nn.KLDivLoss(log_target=True, reduction='batchmean').to(device)
+        self.mseloss = nn.MSELoss().to(device)
+        self.model = model
+
+        m = de_parallel(model).model[-1]  # Detect() module
+        self.na = m.na  # number of anchors
+        self.nc = m.nc  # number of classes
+        self.nl = m.nl  # number of layers
+
+    def __call__(self, pred, pred_flip, targets):
+        sup_loss = ComputeLoss(self.model)
+
+        pred_flip_consis = pred_flip # {[16,3,80,80,6], [16,3,40,40,6], [16,3,20,20,6]}
+        for i in range(3):
+            w = pred[i].shape[2]
+            for j in range(w):
+                pred_flip_consis[i][:,:,j,:,:] = pred_flip[i][:,:,w-1-j,:,:]
+
+        tcls, tbox, indices, anchors = sup_loss.build_targets(pred, targets)  # targets
+        consis_conf = 0
+        consis_x = 0
+        consis_ywh = 0
+        for i, pi in enumerate(pred):  # layer index, layer predictions
+            b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
+
+            n = b.shape[0]
+            if n:
+                px, py, pwh, pconf, pcls = pi[b, a, gj, gi].split((1, 1, 2, 1, self.nc), 1)  # target-subset of predictions
+                px_consis, py_consis, pwh_consis, pconf_consis, pcls_consis = pred_flip_consis[i][b, a, gj, gi].split((1, 1, 2, 1, self.nc), 1)
+
+                consis_conf += (self.kldivloss(pconf.sigmoid(), pconf_consis.sigmoid()) + self.kldivloss(pconf_consis.sigmoid(), pconf.sigmoid()))/2
+                consis_x += self.mseloss(px.sigmoid()*2-0.5, 1.5-px_consis.sigmoid()*2)/2
+                consis_ywh += (self.mseloss(py.sigmoid(), py_consis.sigmoid())+self.mseloss(pwh.sigmoid(), pwh_consis.sigmoid()))/2
+
+        consis_loss = (consis_conf+consis_x+consis_ywh)/3
+
+        return consis_loss, (consis_conf, consis_x, consis_ywh)
+
+
+
+class ConsistencyLossUD: # 上下翻转的consistency loss
+    def __init__(self, model):
+        device = next(model.parameters()).device  # get model device
+        self.kldivloss = nn.KLDivLoss(log_target=True, reduction='batchmean').to(device)
+        self.mseloss = nn.MSELoss().to(device)
+        self.model = model
+
+        m = de_parallel(model).model[-1]  # Detect() module
+        self.na = m.na  # number of anchors
+        self.nc = m.nc  # number of classes
+        self.nl = m.nl  # number of layers
+
+    def __call__(self, pred, pred_flip, targets):
+        sup_loss = ComputeLoss(self.model)
+
+        pred_flip_consis = pred_flip # {[16,3,80,80,6], [16,3,40,40,6], [16,3,20,20,6]}
+        for i in range(3):
+            w = pred[i].shape[2]
+            for j in range(w):
+                pred_flip_consis[i][:,:,j,:,:] = pred_flip[i][:,:,w-1-j,:,:]
+
+        tcls, tbox, indices, anchors = sup_loss.build_targets(pred, targets)  # targets
+        consis_conf = 0
+        consis_y = 0
+        consis_xwh = 0
+        for i, pi in enumerate(pred):  # layer index, layer predictions
+            b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
+
+            n = b.shape[0]
+            if n:
+                px, py, pwh, pconf, pcls = pi[b, a, gj, gi].split((1, 1, 2, 1, self.nc), 1)  # target-subset of predictions
+                px_consis, py_consis, pwh_consis, pconf_consis, pcls_consis = pred_flip_consis[i][b, a, gj, gi].split((1, 1, 2, 1, self.nc), 1)
+
+                consis_conf += (self.kldivloss(pconf.sigmoid(), pconf_consis.sigmoid()) + self.kldivloss(pconf_consis.sigmoid(), pconf.sigmoid()))/2
+                consis_y += self.mseloss(py.sigmoid()*2-0.5, 1.5-py_consis.sigmoid()*2)/2
+                consis_xwh += (self.mseloss(px.sigmoid(), px_consis.sigmoid())+self.mseloss(pwh.sigmoid(), pwh_consis.sigmoid()))/2
+
+        consis_loss = (consis_conf+consis_y+consis_xwh)/3
+
+        return consis_loss, (consis_conf, consis_y, consis_xwh)

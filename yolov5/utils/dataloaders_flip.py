@@ -678,7 +678,7 @@ class LoadImagesAndLabels(Dataset):
 
             labels = self.labels[index].copy()
             if labels.size:  # normalized xywh to pixel xyxy format
-                labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1])
+                labels[:, 1:] = xywhn2xyxy(labels[:, 1:], ratio[0] * w, ratio[1] * h, padw=pad[0], padh=pad[1]) # xy1=top-left, xy2=bottom-right
 
             if self.augment:
                 img, labels = random_perspective(img,
@@ -691,15 +691,15 @@ class LoadImagesAndLabels(Dataset):
 
         nl = len(labels)  # number of labels
         if nl:
-            labels[:, 1:5] = xyxy2xywhn(labels[:, 1:5], w=img.shape[1], h=img.shape[0], clip=True, eps=1E-3)
+            labels[:, 1:5] = xyxy2xywhn(labels[:, 1:5], w=img.shape[1], h=img.shape[0], clip=True, eps=1E-3) # x center, y center
 
         if self.augment:
-            # Albumentations
-            img, labels = self.albumentations(img, labels)
-            nl = len(labels)  # update after albumentations
+            # # Albumentations
+            # img, labels = self.albumentations(img, labels)
+            # nl = len(labels)  # update after albumentations
 
-            # HSV color-space
-            augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            # # HSV color-space
+            # augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
 
             # Flip up-down
             if random.random() < hyp['flipud']:
@@ -707,7 +707,7 @@ class LoadImagesAndLabels(Dataset):
                 if nl:
                     labels[:, 2] = 1 - labels[:, 2]
 
-            # Flip left-right
+            # Flip left-rights
             if random.random() < hyp['fliplr']:
                 img = np.fliplr(img)
                 if nl:
@@ -726,11 +726,16 @@ class LoadImagesAndLabels(Dataset):
         img_fliplr = img_fliplr.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img_fliplr = np.ascontiguousarray(img_fliplr)
 
+        # up and down flip
+        img_flipud = np.flipud(img)
+        img_flipud = img_flipud.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
+        img_flipud = np.ascontiguousarray(img_flipud)
+
         # Convert
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return torch.from_numpy(img), torch.from_numpy(img_fliplr), labels_out, self.im_files[index], shapes
+        return torch.from_numpy(img), torch.from_numpy(img_fliplr), torch.from_numpy(img_flipud), labels_out, self.im_files[index], shapes
 
     def load_image(self, i):
         # Loads 1 image from dataset index 'i', returns (im, original hw, resized hw)
@@ -892,10 +897,10 @@ class LoadImagesAndLabels(Dataset):
 
     @staticmethod
     def collate_fn(batch):
-        im, im_flip, label, path, shapes = zip(*batch)  # transposed
+        im, im_fliplr, im_flipud, label, path, shapes = zip(*batch)  # transposed
         for i, lb in enumerate(label):
             lb[:, 0] = i  # add target image index for build_targets()
-        return torch.stack(im, 0), torch.stack(im_flip, 0), torch.cat(label, 0), path, shapes
+        return torch.stack(im, 0), torch.stack(im_fliplr, 0), torch.stack(im_flipud, 0), torch.cat(label, 0), path, shapes
 
     @staticmethod
     def collate_fn4(batch):

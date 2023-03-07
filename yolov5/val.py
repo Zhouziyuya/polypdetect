@@ -40,9 +40,11 @@ from models.common import DetectMultiBackend
 from utils.callbacks import Callbacks
 from utils.dataloaders import create_dataloader
 from utils.dataloaders_flip import create_dataloader_flip
-from utils.general import (LOGGER, TQDM_BAR_FORMAT, Profile, check_dataset, check_img_size, check_requirements,
-                           check_yaml, coco80_to_coco91_class, colorstr, increment_path, non_max_suppression,
-                           print_args, scale_boxes, xywh2xyxy, xyxy2xywh)
+from utils.general import (LOGGER, TQDM_BAR_FORMAT, Profile, check_dataset,
+                           check_img_size, check_requirements, check_yaml,
+                           coco80_to_coco91_class, colorstr, increment_path,
+                           non_max_suppression, print_args, scale_boxes,
+                           xywh2xyxy, xyxy2xywh)
 from utils.metrics import ConfusionMatrix, ap_per_class, box_iou
 from utils.plots import output_to_target, plot_images, plot_val_study
 from utils.torch_utils import select_device, smart_inference_mode
@@ -98,6 +100,7 @@ def process_batch(detections, labels, iouv):
 
 @smart_inference_mode()
 def run(
+        consis_mode,
         data,
         weights=None,  # model.pt path(s)
         batch_size=32,  # batch size
@@ -173,15 +176,27 @@ def run(
         model.warmup(imgsz=(1 if pt else batch_size, 3, imgsz, imgsz))  # warmup
         pad, rect = (0.0, False) if task == 'speed' else (0.5, pt)  # square inference for benchmarks
         task = task if task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
-        dataloader = create_dataloader_flip(data[task],
-                                       imgsz,
-                                       batch_size,
-                                       stride,
-                                       single_cls,
-                                       pad=pad,
-                                       rect=rect,
-                                       workers=workers,
-                                       prefix=colorstr(f'{task}: '))[0]
+
+        if consis_mode is not None:
+            dataloader = create_dataloader_flip(data[task],
+                                        imgsz,
+                                        batch_size,
+                                        stride,
+                                        single_cls,
+                                        pad=pad,
+                                        rect=rect,
+                                        workers=workers,
+                                        prefix=colorstr(f'{task}: '))[0]
+        else:
+            dataloader = create_dataloader(data[task],
+                                        imgsz,
+                                        batch_size,
+                                        stride,
+                                        single_cls,
+                                        pad=pad,
+                                        rect=rect,
+                                        workers=workers,
+                                        prefix=colorstr(f'{task}: '))[0]
 
     seen = 0
     confusion_matrix = ConfusionMatrix(nc=nc)
@@ -196,7 +211,12 @@ def run(
     jdict, stats, ap, ap_class = [], [], [], []
     callbacks.run('on_val_start')
     pbar = tqdm(dataloader, desc=s, bar_format=TQDM_BAR_FORMAT)  # progress bar
-    for batch_i, (im, _,targets, paths, shapes) in enumerate(pbar):
+    
+    for batch_i, a in enumerate(pbar):
+        if consis_mode is not None:
+            im, _,_,targets, paths, shapes = a
+        else:
+            im, targets, paths, shapes = a
         callbacks.run('on_val_batch_start')
         with dt[0]:
             if cuda:
@@ -227,7 +247,7 @@ def run(
                                         max_det=max_det)
 
         # Metrics
-        for si, pred in enumerate(preds):
+        for si, pred in enumerate(preds): # preds为一个batch内的预测结果，pred为每张图的预测结果
             labels = targets[targets[:, 0] == si, 1:]
             nl, npr = labels.shape[0], pred.shape[0]  # number of labels, predictions
             path, shape = Path(paths[si]), shapes[si][0]
@@ -267,7 +287,8 @@ def run(
         # Plot images
         if plots and batch_i < 3:
             plot_images(im, targets, paths, save_dir / f'val_batch{batch_i}_labels.jpg', names)  # labels
-            plot_images(im, output_to_target(preds), paths, save_dir / f'val_batch{batch_i}_pred.jpg', names)  # pred
+            a = output_to_target(preds)
+            plot_images(im, a, paths, save_dir / f'val_batch{batch_i}_pred.jpg', names)  # pred
 
         callbacks.run('on_val_batch_end', batch_i, im, targets, paths, shapes, preds)
 
@@ -340,20 +361,22 @@ def run(
 
 def parse_opt():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--consis_mode', type=str, default='', help='lr or ud, left and right or up and down')
+    # parser.add_argument('--data', type=str, default='data/renji.yaml', help='dataset.yaml path')
     parser.add_argument('--data', type=str, default='data/public_polyp.yaml', help='dataset.yaml path')
-    parser.add_argument('--weights', nargs='+', type=str, default='runs/train/consis_conf0.5_mask2/weights/best.pt', help='model path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default='runs/train/flipud/weights/best.pt', help='model path(s)')
     parser.add_argument('--batch-size', type=int, default=32, help='batch size')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.001, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.6, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=300, help='maximum detections per image')
     parser.add_argument('--task', default='test', help='train, val, test, speed or study')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='2', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--verbose', action='store_true', help='report mAP by class')
-    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    parser.add_argument('--save-txt', default=True, help='save results to *.txt')
     parser.add_argument('--save-hybrid', action='store_true', help='save label+prediction hybrid results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--save-json', action='store_true', help='save a COCO-JSON results file')
