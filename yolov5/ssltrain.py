@@ -478,6 +478,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                 if f is best:
                     LOGGER.info(f'\nValidating {f}...')
                     results, _, _ = validate.run(
+                        opt.consis_mode,
                         data_dict,
                         batch_size=batch_size // WORLD_SIZE * 2,
                         imgsz=imgsz,
