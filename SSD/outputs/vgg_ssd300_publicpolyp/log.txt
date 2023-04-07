@@ -1,0 +1,323 @@
+2023-04-07 14:54:28,336 SSD INFO: Using 1 GPUs
+2023-04-07 14:54:28,336 SSD INFO: Namespace(config_file='configs/polyp.yaml', distributed=False, eval_step=2500, local_rank=0, log_step=10, num_gpus=1, opts=[], save_step=2500, skip_test=False, use_tensorboard=True)
+2023-04-07 14:54:28,336 SSD INFO: Loaded configuration file configs/polyp.yaml
+2023-04-07 14:54:28,337 SSD INFO: 
+MODEL:
+  NUM_CLASSES: 2
+INPUT:
+  IMAGE_SIZE: 300
+DATASETS:
+  TRAIN: ("polyp_train", "polyp_val")
+  TEST: ("polyp_test", )
+SOLVER:
+  MAX_ITER: 120000
+  LR_STEPS: [80000, 100000]
+  GAMMA: 0.1
+  BATCH_SIZE: 32
+  LR: 1e-4
+
+OUTPUT_DIR: 'outputs/vgg_ssd300_publicpolyp'
+2023-04-07 14:54:28,337 SSD INFO: Running with config:
+DATASETS:
+  TEST: ('polyp_test',)
+  TRAIN: ('polyp_train', 'polyp_val')
+DATA_LOADER:
+  NUM_WORKERS: 8
+  PIN_MEMORY: True
+INPUT:
+  IMAGE_SIZE: 300
+  PIXEL_MEAN: [123, 117, 104]
+MODEL:
+  BACKBONE:
+    NAME: vgg
+    OUT_CHANNELS: (512, 1024, 512, 256, 256, 256)
+    PRETRAINED: True
+  BOX_HEAD:
+    NAME: SSDBoxHead
+    PREDICTOR: SSDBoxPredictor
+  CENTER_VARIANCE: 0.1
+  DEVICE: cuda:7
+  META_ARCHITECTURE: SSDDetector
+  NEG_POS_RATIO: 3
+  NUM_CLASSES: 2
+  PRIORS:
+    ASPECT_RATIOS: [[2], [2, 3], [2, 3], [2, 3], [2], [2]]
+    BOXES_PER_LOCATION: [4, 6, 6, 6, 4, 4]
+    CLIP: True
+    FEATURE_MAPS: [38, 19, 10, 5, 3, 1]
+    MAX_SIZES: [60, 111, 162, 213, 264, 315]
+    MIN_SIZES: [30, 60, 111, 162, 213, 264]
+    STRIDES: [8, 16, 32, 64, 100, 300]
+  SIZE_VARIANCE: 0.2
+  THRESHOLD: 0.5
+OUTPUT_DIR: outputs/vgg_ssd300_publicpolyp
+SOLVER:
+  BATCH_SIZE: 32
+  GAMMA: 0.1
+  LR: 0.0001
+  LR_STEPS: [80000, 100000]
+  MAX_ITER: 120000
+  MOMENTUM: 0.9
+  WARMUP_FACTOR: 0.3333333333333333
+  WARMUP_ITERS: 500
+  WEIGHT_DECAY: 0.0005
+TEST:
+  BATCH_SIZE: 10
+  CONFIDENCE_THRESHOLD: 0.01
+  MAX_PER_CLASS: -1
+  MAX_PER_IMAGE: 100
+  NMS_THRESHOLD: 0.45
+2023-04-07 14:54:34,258 SSD.trainer INFO: No checkpoint found.
+2023-04-07 14:54:34,284 SSD.trainer INFO: Start training ...
+2023-04-07 14:54:45,146 SSD.trainer INFO: iter: 000010, lr: 0.00003, total_loss: 15.318 (15.318), reg_loss: 3.560 (3.560), cls_loss: 11.758 (11.758), time: 1.059 (1.059), eta: 1 day, 11:18:30
+2023-04-07 14:54:47,425 SSD.trainer INFO: iter: 000020, lr: 0.00004, total_loss: 10.587 (12.953), reg_loss: 3.574 (3.567), cls_loss: 7.013 (9.385), time: 0.228 (0.644), eta: 21:27:05
+2023-04-07 14:54:49,678 SSD.trainer INFO: iter: 000030, lr: 0.00004, total_loss: 8.077 (11.328), reg_loss: 3.184 (3.440), cls_loss: 4.893 (7.888), time: 0.225 (0.504), eta: 16:48:08
+2023-04-07 14:54:51,952 SSD.trainer INFO: iter: 000040, lr: 0.00004, total_loss: 8.008 (10.498), reg_loss: 3.303 (3.405), cls_loss: 4.705 (7.092), time: 0.227 (0.435), eta: 14:29:44
+2023-04-07 14:54:54,226 SSD.trainer INFO: iter: 000050, lr: 0.00004, total_loss: 7.525 (9.903), reg_loss: 3.305 (3.385), cls_loss: 4.220 (6.518), time: 0.227 (0.393), eta: 13:06:37
+2023-04-07 14:54:56,527 SSD.trainer INFO: iter: 000060, lr: 0.00004, total_loss: 7.055 (9.428), reg_loss: 3.087 (3.336), cls_loss: 3.967 (6.093), time: 0.230 (0.366), eta: 12:12:09
+2023-04-07 14:54:58,847 SSD.trainer INFO: iter: 000070, lr: 0.00004, total_loss: 6.908 (9.068), reg_loss: 3.070 (3.298), cls_loss: 3.838 (5.771), time: 0.232 (0.347), eta: 11:33:43
+2023-04-07 14:55:01,165 SSD.trainer INFO: iter: 000080, lr: 0.00004, total_loss: 6.730 (8.776), reg_loss: 3.083 (3.271), cls_loss: 3.647 (5.505), time: 0.232 (0.333), eta: 11:04:53
+2023-04-07 14:55:03,504 SSD.trainer INFO: iter: 000090, lr: 0.00005, total_loss: 6.519 (8.525), reg_loss: 2.958 (3.236), cls_loss: 3.561 (5.289), time: 0.234 (0.322), eta: 10:42:53
+2023-04-07 14:55:05,854 SSD.trainer INFO: iter: 000100, lr: 0.00005, total_loss: 6.399 (8.313), reg_loss: 2.970 (3.210), cls_loss: 3.429 (5.103), time: 0.235 (0.313), eta: 10:25:31
+2023-04-07 14:55:08,262 SSD.trainer INFO: iter: 000110, lr: 0.00005, total_loss: 6.148 (8.116), reg_loss: 2.873 (3.179), cls_loss: 3.276 (4.937), time: 0.241 (0.306), eta: 10:12:20
+2023-04-07 14:55:10,687 SSD.trainer INFO: iter: 000120, lr: 0.00005, total_loss: 6.023 (7.941), reg_loss: 2.878 (3.154), cls_loss: 3.145 (4.788), time: 0.243 (0.301), eta: 10:01:39
+2023-04-07 14:55:13,093 SSD.trainer INFO: iter: 000130, lr: 0.00005, total_loss: 5.856 (7.781), reg_loss: 2.757 (3.123), cls_loss: 3.098 (4.658), time: 0.241 (0.296), eta: 9:52:18
+2023-04-07 14:55:15,558 SSD.trainer INFO: iter: 000140, lr: 0.00005, total_loss: 5.710 (7.633), reg_loss: 2.702 (3.093), cls_loss: 3.008 (4.540), time: 0.246 (0.293), eta: 9:45:06
+2023-04-07 14:55:18,113 SSD.trainer INFO: iter: 000150, lr: 0.00005, total_loss: 5.664 (7.502), reg_loss: 2.691 (3.066), cls_loss: 2.973 (4.435), time: 0.256 (0.290), eta: 9:40:05
+2023-04-07 14:55:20,617 SSD.trainer INFO: iter: 000160, lr: 0.00005, total_loss: 5.720 (7.390), reg_loss: 2.783 (3.049), cls_loss: 2.937 (4.342), time: 0.250 (0.288), eta: 9:35:02
+2023-04-07 14:55:22,966 SSD.trainer INFO: iter: 000170, lr: 0.00006, total_loss: 5.645 (7.288), reg_loss: 2.751 (3.031), cls_loss: 2.894 (4.257), time: 0.235 (0.285), eta: 9:28:46
+2023-04-07 14:55:25,305 SSD.trainer INFO: iter: 000180, lr: 0.00006, total_loss: 5.620 (7.195), reg_loss: 2.733 (3.015), cls_loss: 2.887 (4.180), time: 0.234 (0.282), eta: 9:23:04
+2023-04-07 14:55:27,624 SSD.trainer INFO: iter: 000190, lr: 0.00006, total_loss: 5.508 (7.106), reg_loss: 2.652 (2.996), cls_loss: 2.856 (4.111), time: 0.232 (0.279), eta: 9:17:45
+2023-04-07 14:55:29,913 SSD.trainer INFO: iter: 000200, lr: 0.00006, total_loss: 5.506 (7.026), reg_loss: 2.677 (2.980), cls_loss: 2.830 (4.047), time: 0.229 (0.277), eta: 9:12:41
+2023-04-07 14:55:32,222 SSD.trainer INFO: iter: 000210, lr: 0.00006, total_loss: 5.512 (6.954), reg_loss: 2.681 (2.965), cls_loss: 2.831 (3.989), time: 0.231 (0.275), eta: 9:08:16
+2023-04-07 14:55:34,530 SSD.trainer INFO: iter: 000220, lr: 0.00006, total_loss: 5.531 (6.889), reg_loss: 2.717 (2.954), cls_loss: 2.814 (3.935), time: 0.231 (0.273), eta: 9:04:15
+2023-04-07 14:55:36,844 SSD.trainer INFO: iter: 000230, lr: 0.00006, total_loss: 5.420 (6.826), reg_loss: 2.639 (2.940), cls_loss: 2.781 (3.885), time: 0.231 (0.271), eta: 9:00:37
+2023-04-07 14:55:39,132 SSD.trainer INFO: iter: 000240, lr: 0.00007, total_loss: 5.501 (6.770), reg_loss: 2.734 (2.932), cls_loss: 2.766 (3.839), time: 0.229 (0.269), eta: 8:57:05
+2023-04-07 14:55:41,468 SSD.trainer INFO: iter: 000250, lr: 0.00007, total_loss: 5.408 (6.716), reg_loss: 2.646 (2.920), cls_loss: 2.762 (3.796), time: 0.234 (0.268), eta: 8:54:12
+2023-04-07 14:55:43,791 SSD.trainer INFO: iter: 000260, lr: 0.00007, total_loss: 5.477 (6.668), reg_loss: 2.739 (2.913), cls_loss: 2.738 (3.755), time: 0.232 (0.266), eta: 8:51:27
+2023-04-07 14:55:46,152 SSD.trainer INFO: iter: 000270, lr: 0.00007, total_loss: 5.399 (6.621), reg_loss: 2.660 (2.904), cls_loss: 2.740 (3.717), time: 0.236 (0.265), eta: 8:49:10
+2023-04-07 14:55:48,543 SSD.trainer INFO: iter: 000280, lr: 0.00007, total_loss: 5.296 (6.574), reg_loss: 2.569 (2.892), cls_loss: 2.727 (3.682), time: 0.239 (0.264), eta: 8:47:16
+2023-04-07 14:55:50,917 SSD.trainer INFO: iter: 000290, lr: 0.00007, total_loss: 5.491 (6.537), reg_loss: 2.754 (2.887), cls_loss: 2.737 (3.649), time: 0.237 (0.263), eta: 8:45:22
+2023-04-07 14:55:53,288 SSD.trainer INFO: iter: 000300, lr: 0.00007, total_loss: 5.425 (6.500), reg_loss: 2.711 (2.881), cls_loss: 2.714 (3.618), time: 0.237 (0.262), eta: 8:43:35
+2023-04-07 14:55:55,729 SSD.trainer INFO: iter: 000310, lr: 0.00007, total_loss: 5.330 (6.462), reg_loss: 2.645 (2.874), cls_loss: 2.685 (3.588), time: 0.244 (0.262), eta: 8:42:21
+2023-04-07 14:55:58,173 SSD.trainer INFO: iter: 000320, lr: 0.00008, total_loss: 5.317 (6.426), reg_loss: 2.624 (2.866), cls_loss: 2.693 (3.560), time: 0.244 (0.261), eta: 8:41:14
+2023-04-07 14:56:00,577 SSD.trainer INFO: iter: 000330, lr: 0.00008, total_loss: 5.249 (6.390), reg_loss: 2.594 (2.858), cls_loss: 2.656 (3.533), time: 0.240 (0.261), eta: 8:39:55
+2023-04-07 14:56:02,925 SSD.trainer INFO: iter: 000340, lr: 0.00008, total_loss: 5.314 (6.359), reg_loss: 2.626 (2.851), cls_loss: 2.688 (3.508), time: 0.235 (0.260), eta: 8:38:22
+2023-04-07 14:56:05,245 SSD.trainer INFO: iter: 000350, lr: 0.00008, total_loss: 5.313 (6.329), reg_loss: 2.635 (2.845), cls_loss: 2.677 (3.484), time: 0.232 (0.259), eta: 8:36:43
+2023-04-07 14:56:07,568 SSD.trainer INFO: iter: 000360, lr: 0.00008, total_loss: 5.458 (6.305), reg_loss: 2.759 (2.842), cls_loss: 2.699 (3.462), time: 0.232 (0.258), eta: 8:35:12
+2023-04-07 14:56:09,876 SSD.trainer INFO: iter: 000370, lr: 0.00008, total_loss: 5.346 (6.279), reg_loss: 2.711 (2.839), cls_loss: 2.635 (3.440), time: 0.231 (0.258), eta: 8:33:40
+2023-04-07 14:56:12,200 SSD.trainer INFO: iter: 000380, lr: 0.00008, total_loss: 5.211 (6.251), reg_loss: 2.571 (2.832), cls_loss: 2.640 (3.419), time: 0.232 (0.257), eta: 8:32:18
+2023-04-07 14:56:14,519 SSD.trainer INFO: iter: 000390, lr: 0.00009, total_loss: 5.208 (6.224), reg_loss: 2.606 (2.826), cls_loss: 2.602 (3.398), time: 0.232 (0.256), eta: 8:30:58
+2023-04-07 14:56:16,838 SSD.trainer INFO: iter: 000400, lr: 0.00009, total_loss: 5.238 (6.199), reg_loss: 2.636 (2.821), cls_loss: 2.602 (3.378), time: 0.232 (0.256), eta: 8:29:43
+2023-04-07 14:56:19,155 SSD.trainer INFO: iter: 000410, lr: 0.00009, total_loss: 5.083 (6.172), reg_loss: 2.482 (2.813), cls_loss: 2.601 (3.359), time: 0.232 (0.255), eta: 8:28:30
+2023-04-07 14:56:21,524 SSD.trainer INFO: iter: 000420, lr: 0.00009, total_loss: 5.168 (6.148), reg_loss: 2.563 (2.807), cls_loss: 2.605 (3.341), time: 0.237 (0.255), eta: 8:27:36
+2023-04-07 14:56:23,875 SSD.trainer INFO: iter: 000430, lr: 0.00009, total_loss: 5.240 (6.127), reg_loss: 2.603 (2.802), cls_loss: 2.637 (3.325), time: 0.235 (0.254), eta: 8:26:39
+2023-04-07 14:56:26,211 SSD.trainer INFO: iter: 000440, lr: 0.00009, total_loss: 5.276 (6.108), reg_loss: 2.669 (2.799), cls_loss: 2.606 (3.308), time: 0.234 (0.254), eta: 8:25:40
+2023-04-07 14:56:28,546 SSD.trainer INFO: iter: 000450, lr: 0.00009, total_loss: 5.264 (6.089), reg_loss: 2.615 (2.795), cls_loss: 2.648 (3.294), time: 0.234 (0.253), eta: 8:24:44
+2023-04-07 14:56:30,883 SSD.trainer INFO: iter: 000460, lr: 0.00009, total_loss: 5.143 (6.068), reg_loss: 2.547 (2.790), cls_loss: 2.596 (3.279), time: 0.234 (0.253), eta: 8:23:50
+2023-04-07 14:56:33,268 SSD.trainer INFO: iter: 000470, lr: 0.00010, total_loss: 5.193 (6.050), reg_loss: 2.579 (2.785), cls_loss: 2.614 (3.264), time: 0.238 (0.253), eta: 8:23:11
+2023-04-07 14:56:35,655 SSD.trainer INFO: iter: 000480, lr: 0.00010, total_loss: 5.146 (6.031), reg_loss: 2.573 (2.781), cls_loss: 2.573 (3.250), time: 0.239 (0.252), eta: 8:22:34
+2023-04-07 14:56:38,119 SSD.trainer INFO: iter: 000490, lr: 0.00010, total_loss: 5.086 (6.012), reg_loss: 2.517 (2.775), cls_loss: 2.570 (3.236), time: 0.246 (0.252), eta: 8:22:17
+2023-04-07 14:56:40,561 SSD.trainer INFO: iter: 000500, lr: 0.00010, total_loss: 5.084 (5.993), reg_loss: 2.534 (2.771), cls_loss: 2.549 (3.222), time: 0.244 (0.252), eta: 8:21:56
+2023-04-07 14:56:42,931 SSD.trainer INFO: iter: 000510, lr: 0.00010, total_loss: 5.056 (5.975), reg_loss: 2.512 (2.766), cls_loss: 2.543 (3.209), time: 0.237 (0.252), eta: 8:21:18
+2023-04-07 14:56:45,312 SSD.trainer INFO: iter: 000520, lr: 0.00010, total_loss: 5.130 (5.958), reg_loss: 2.575 (2.762), cls_loss: 2.555 (3.197), time: 0.238 (0.251), eta: 8:20:44
+2023-04-07 14:56:47,713 SSD.trainer INFO: iter: 000530, lr: 0.00010, total_loss: 5.145 (5.943), reg_loss: 2.548 (2.758), cls_loss: 2.596 (3.185), time: 0.240 (0.251), eta: 8:20:16
+2023-04-07 14:56:50,747 SSD.trainer INFO: iter: 000540, lr: 0.00010, total_loss: 5.040 (5.926), reg_loss: 2.490 (2.753), cls_loss: 2.550 (3.173), time: 0.303 (0.252), eta: 8:22:09
+2023-04-07 14:56:53,104 SSD.trainer INFO: iter: 000550, lr: 0.00010, total_loss: 5.009 (5.910), reg_loss: 2.487 (2.748), cls_loss: 2.523 (3.162), time: 0.236 (0.252), eta: 8:21:30
+2023-04-07 14:56:55,451 SSD.trainer INFO: iter: 000560, lr: 0.00010, total_loss: 4.984 (5.893), reg_loss: 2.484 (2.743), cls_loss: 2.500 (3.150), time: 0.235 (0.252), eta: 8:20:51
+2023-04-07 14:56:57,803 SSD.trainer INFO: iter: 000570, lr: 0.00010, total_loss: 4.915 (5.876), reg_loss: 2.447 (2.738), cls_loss: 2.467 (3.138), time: 0.235 (0.251), eta: 8:20:14
+2023-04-07 14:57:00,153 SSD.trainer INFO: iter: 000580, lr: 0.00010, total_loss: 4.951 (5.860), reg_loss: 2.474 (2.734), cls_loss: 2.477 (3.126), time: 0.235 (0.251), eta: 8:19:38
+2023-04-07 14:57:02,530 SSD.trainer INFO: iter: 000590, lr: 0.00010, total_loss: 4.894 (5.844), reg_loss: 2.425 (2.728), cls_loss: 2.470 (3.115), time: 0.238 (0.251), eta: 8:19:09
+2023-04-07 14:57:04,906 SSD.trainer INFO: iter: 000600, lr: 0.00010, total_loss: 4.872 (5.827), reg_loss: 2.404 (2.723), cls_loss: 2.469 (3.105), time: 0.238 (0.251), eta: 8:18:40
+2023-04-07 14:57:07,244 SSD.trainer INFO: iter: 000610, lr: 0.00010, total_loss: 4.988 (5.814), reg_loss: 2.531 (2.720), cls_loss: 2.458 (3.094), time: 0.234 (0.250), eta: 8:18:04
+2023-04-07 14:57:09,641 SSD.trainer INFO: iter: 000620, lr: 0.00010, total_loss: 4.872 (5.799), reg_loss: 2.403 (2.715), cls_loss: 2.469 (3.084), time: 0.240 (0.250), eta: 8:17:41
+2023-04-07 14:57:12,060 SSD.trainer INFO: iter: 000630, lr: 0.00010, total_loss: 4.876 (5.784), reg_loss: 2.436 (2.710), cls_loss: 2.440 (3.074), time: 0.242 (0.250), eta: 8:17:23
+2023-04-07 14:57:14,512 SSD.trainer INFO: iter: 000640, lr: 0.00010, total_loss: 4.796 (5.768), reg_loss: 2.373 (2.705), cls_loss: 2.423 (3.063), time: 0.245 (0.250), eta: 8:17:12
+2023-04-07 14:57:16,936 SSD.trainer INFO: iter: 000650, lr: 0.00010, total_loss: 4.740 (5.753), reg_loss: 2.316 (2.699), cls_loss: 2.424 (3.054), time: 0.242 (0.250), eta: 8:16:56
+2023-04-07 14:57:22,343 SSD.trainer INFO: iter: 000660, lr: 0.00010, total_loss: 4.733 (5.737), reg_loss: 2.311 (2.693), cls_loss: 2.422 (3.044), time: 0.541 (0.254), eta: 8:25:39
+2023-04-07 14:57:24,860 SSD.trainer INFO: iter: 000670, lr: 0.00010, total_loss: 4.917 (5.725), reg_loss: 2.462 (2.690), cls_loss: 2.455 (3.035), time: 0.252 (0.254), eta: 8:25:32
+2023-04-07 14:57:27,336 SSD.trainer INFO: iter: 000680, lr: 0.00010, total_loss: 4.842 (5.712), reg_loss: 2.422 (2.686), cls_loss: 2.420 (3.026), time: 0.247 (0.254), eta: 8:25:18
+2023-04-07 14:57:29,814 SSD.trainer INFO: iter: 000690, lr: 0.00010, total_loss: 4.806 (5.699), reg_loss: 2.384 (2.681), cls_loss: 2.422 (3.017), time: 0.248 (0.254), eta: 8:25:04
+2023-04-07 14:57:32,326 SSD.trainer INFO: iter: 000700, lr: 0.00010, total_loss: 4.757 (5.685), reg_loss: 2.345 (2.677), cls_loss: 2.412 (3.009), time: 0.251 (0.254), eta: 8:24:57
+2023-04-07 14:57:34,805 SSD.trainer INFO: iter: 000710, lr: 0.00010, total_loss: 4.753 (5.672), reg_loss: 2.342 (2.672), cls_loss: 2.411 (3.000), time: 0.248 (0.254), eta: 8:24:44
+2023-04-07 14:57:37,232 SSD.trainer INFO: iter: 000720, lr: 0.00010, total_loss: 4.712 (5.659), reg_loss: 2.306 (2.667), cls_loss: 2.406 (2.992), time: 0.243 (0.254), eta: 8:24:23
+2023-04-07 14:57:40,029 SSD.trainer INFO: iter: 000730, lr: 0.00010, total_loss: 4.717 (5.646), reg_loss: 2.289 (2.662), cls_loss: 2.428 (2.984), time: 0.280 (0.254), eta: 8:25:03
+2023-04-07 14:57:42,370 SSD.trainer INFO: iter: 000740, lr: 0.00010, total_loss: 4.657 (5.633), reg_loss: 2.251 (2.656), cls_loss: 2.406 (2.977), time: 0.234 (0.254), eta: 8:24:28
+2023-04-07 14:57:44,737 SSD.trainer INFO: iter: 000750, lr: 0.00010, total_loss: 4.685 (5.620), reg_loss: 2.294 (2.651), cls_loss: 2.391 (2.969), time: 0.237 (0.254), eta: 8:23:59
+2023-04-07 14:57:47,151 SSD.trainer INFO: iter: 000760, lr: 0.00010, total_loss: 4.664 (5.607), reg_loss: 2.266 (2.646), cls_loss: 2.398 (2.961), time: 0.241 (0.253), eta: 8:23:37
+2023-04-07 14:57:49,486 SSD.trainer INFO: iter: 000770, lr: 0.00010, total_loss: 4.672 (5.595), reg_loss: 2.269 (2.641), cls_loss: 2.403 (2.954), time: 0.234 (0.253), eta: 8:23:04
+2023-04-07 14:57:51,839 SSD.trainer INFO: iter: 000780, lr: 0.00010, total_loss: 4.741 (5.584), reg_loss: 2.345 (2.637), cls_loss: 2.396 (2.947), time: 0.235 (0.253), eta: 8:22:34
+2023-04-07 14:57:54,158 SSD.trainer INFO: iter: 000790, lr: 0.00010, total_loss: 4.664 (5.573), reg_loss: 2.261 (2.633), cls_loss: 2.403 (2.940), time: 0.232 (0.253), eta: 8:22:00
+2023-04-07 14:57:56,468 SSD.trainer INFO: iter: 000800, lr: 0.00010, total_loss: 4.652 (5.561), reg_loss: 2.229 (2.628), cls_loss: 2.423 (2.934), time: 0.231 (0.252), eta: 8:21:25
+2023-04-07 14:57:58,776 SSD.trainer INFO: iter: 000810, lr: 0.00010, total_loss: 4.696 (5.550), reg_loss: 2.293 (2.623), cls_loss: 2.402 (2.927), time: 0.231 (0.252), eta: 8:20:51
+2023-04-07 14:58:01,124 SSD.trainer INFO: iter: 000820, lr: 0.00010, total_loss: 4.601 (5.539), reg_loss: 2.196 (2.618), cls_loss: 2.405 (2.921), time: 0.235 (0.252), eta: 8:20:23
+2023-04-07 14:58:03,449 SSD.trainer INFO: iter: 000830, lr: 0.00010, total_loss: 4.683 (5.529), reg_loss: 2.263 (2.614), cls_loss: 2.420 (2.915), time: 0.233 (0.252), eta: 8:19:52
+2023-04-07 14:58:05,801 SSD.trainer INFO: iter: 000840, lr: 0.00010, total_loss: 4.621 (5.518), reg_loss: 2.230 (2.609), cls_loss: 2.391 (2.908), time: 0.235 (0.251), eta: 8:19:27
+2023-04-07 14:58:08,140 SSD.trainer INFO: iter: 000850, lr: 0.00010, total_loss: 4.679 (5.508), reg_loss: 2.269 (2.605), cls_loss: 2.410 (2.903), time: 0.234 (0.251), eta: 8:18:59
+2023-04-07 14:58:10,540 SSD.trainer INFO: iter: 000860, lr: 0.00010, total_loss: 4.585 (5.497), reg_loss: 2.191 (2.601), cls_loss: 2.394 (2.897), time: 0.240 (0.251), eta: 8:18:41
+2023-04-07 14:58:12,895 SSD.trainer INFO: iter: 000870, lr: 0.00010, total_loss: 4.701 (5.488), reg_loss: 2.303 (2.597), cls_loss: 2.399 (2.891), time: 0.236 (0.251), eta: 8:18:17
+2023-04-07 14:58:15,269 SSD.trainer INFO: iter: 000880, lr: 0.00010, total_loss: 4.610 (5.478), reg_loss: 2.208 (2.593), cls_loss: 2.402 (2.885), time: 0.237 (0.251), eta: 8:17:56
+2023-04-07 14:58:17,650 SSD.trainer INFO: iter: 000890, lr: 0.00010, total_loss: 4.613 (5.468), reg_loss: 2.228 (2.589), cls_loss: 2.385 (2.880), time: 0.238 (0.251), eta: 8:17:37
+2023-04-07 14:58:20,041 SSD.trainer INFO: iter: 000900, lr: 0.00010, total_loss: 4.614 (5.459), reg_loss: 2.216 (2.585), cls_loss: 2.398 (2.874), time: 0.239 (0.251), eta: 8:17:19
+2023-04-07 14:58:22,406 SSD.trainer INFO: iter: 000910, lr: 0.00010, total_loss: 4.584 (5.449), reg_loss: 2.203 (2.580), cls_loss: 2.382 (2.869), time: 0.237 (0.250), eta: 8:16:58
+2023-04-07 14:58:24,765 SSD.trainer INFO: iter: 000920, lr: 0.00010, total_loss: 4.581 (5.440), reg_loss: 2.197 (2.576), cls_loss: 2.384 (2.864), time: 0.236 (0.250), eta: 8:16:37
+2023-04-07 14:58:27,078 SSD.trainer INFO: iter: 000930, lr: 0.00010, total_loss: 4.593 (5.431), reg_loss: 2.201 (2.572), cls_loss: 2.393 (2.859), time: 0.231 (0.250), eta: 8:16:10
+2023-04-07 14:58:29,440 SSD.trainer INFO: iter: 000940, lr: 0.00010, total_loss: 4.588 (5.422), reg_loss: 2.199 (2.568), cls_loss: 2.389 (2.854), time: 0.236 (0.250), eta: 8:15:50
+2023-04-07 14:58:31,771 SSD.trainer INFO: iter: 000950, lr: 0.00010, total_loss: 4.545 (5.413), reg_loss: 2.169 (2.564), cls_loss: 2.375 (2.849), time: 0.233 (0.250), eta: 8:15:27
+2023-04-07 14:58:34,080 SSD.trainer INFO: iter: 000960, lr: 0.00010, total_loss: 4.594 (5.404), reg_loss: 2.194 (2.560), cls_loss: 2.400 (2.844), time: 0.231 (0.250), eta: 8:15:01
+2023-04-07 14:58:36,407 SSD.trainer INFO: iter: 000970, lr: 0.00010, total_loss: 4.499 (5.395), reg_loss: 2.134 (2.556), cls_loss: 2.366 (2.839), time: 0.233 (0.249), eta: 8:14:38
+2023-04-07 14:58:38,717 SSD.trainer INFO: iter: 000980, lr: 0.00010, total_loss: 4.531 (5.386), reg_loss: 2.154 (2.552), cls_loss: 2.377 (2.834), time: 0.231 (0.249), eta: 8:14:13
+2023-04-07 14:58:41,015 SSD.trainer INFO: iter: 000990, lr: 0.00010, total_loss: 4.517 (5.377), reg_loss: 2.136 (2.547), cls_loss: 2.381 (2.830), time: 0.230 (0.249), eta: 8:13:47
+2023-04-07 14:58:43,320 SSD.trainer INFO: iter: 001000, lr: 0.00010, total_loss: 4.572 (5.369), reg_loss: 2.206 (2.544), cls_loss: 2.366 (2.825), time: 0.230 (0.249), eta: 8:13:23
+2023-04-07 14:58:45,681 SSD.trainer INFO: iter: 001010, lr: 0.00010, total_loss: 4.624 (5.362), reg_loss: 2.232 (2.541), cls_loss: 2.392 (2.821), time: 0.236 (0.249), eta: 8:13:05
+2023-04-07 14:58:48,033 SSD.trainer INFO: iter: 001020, lr: 0.00010, total_loss: 4.596 (5.354), reg_loss: 2.217 (2.538), cls_loss: 2.379 (2.816), time: 0.235 (0.249), eta: 8:12:47
+2023-04-07 14:58:50,413 SSD.trainer INFO: iter: 001030, lr: 0.00010, total_loss: 4.442 (5.345), reg_loss: 2.072 (2.533), cls_loss: 2.370 (2.812), time: 0.238 (0.248), eta: 8:12:33
+2023-04-07 14:58:52,790 SSD.trainer INFO: iter: 001040, lr: 0.00010, total_loss: 4.428 (5.336), reg_loss: 2.060 (2.529), cls_loss: 2.368 (2.808), time: 0.238 (0.248), eta: 8:12:18
+2023-04-07 14:58:55,236 SSD.trainer INFO: iter: 001050, lr: 0.00010, total_loss: 4.481 (5.328), reg_loss: 2.108 (2.525), cls_loss: 2.374 (2.804), time: 0.245 (0.248), eta: 8:12:11
+2023-04-07 14:58:57,665 SSD.trainer INFO: iter: 001060, lr: 0.00010, total_loss: 4.412 (5.320), reg_loss: 2.039 (2.520), cls_loss: 2.373 (2.800), time: 0.243 (0.248), eta: 8:12:03
+2023-04-07 14:59:00,122 SSD.trainer INFO: iter: 001070, lr: 0.00010, total_loss: 4.501 (5.312), reg_loss: 2.107 (2.516), cls_loss: 2.393 (2.796), time: 0.246 (0.248), eta: 8:11:57
+2023-04-07 14:59:02,500 SSD.trainer INFO: iter: 001080, lr: 0.00010, total_loss: 4.502 (5.305), reg_loss: 2.103 (2.512), cls_loss: 2.399 (2.792), time: 0.238 (0.248), eta: 8:11:43
+2023-04-07 14:59:04,913 SSD.trainer INFO: iter: 001090, lr: 0.00010, total_loss: 4.422 (5.296), reg_loss: 2.040 (2.508), cls_loss: 2.382 (2.788), time: 0.241 (0.248), eta: 8:11:33
+2023-04-07 14:59:07,249 SSD.trainer INFO: iter: 001100, lr: 0.00010, total_loss: 4.538 (5.290), reg_loss: 2.159 (2.505), cls_loss: 2.379 (2.785), time: 0.234 (0.248), eta: 8:11:15
+2023-04-07 14:59:09,565 SSD.trainer INFO: iter: 001110, lr: 0.00010, total_loss: 4.431 (5.282), reg_loss: 2.045 (2.501), cls_loss: 2.385 (2.781), time: 0.232 (0.248), eta: 8:10:56
+2023-04-07 14:59:11,902 SSD.trainer INFO: iter: 001120, lr: 0.00010, total_loss: 4.382 (5.274), reg_loss: 2.030 (2.497), cls_loss: 2.352 (2.777), time: 0.234 (0.248), eta: 8:10:38
+2023-04-07 14:59:14,221 SSD.trainer INFO: iter: 001130, lr: 0.00010, total_loss: 4.440 (5.266), reg_loss: 2.070 (2.493), cls_loss: 2.370 (2.774), time: 0.232 (0.247), eta: 8:10:19
+2023-04-07 14:59:16,533 SSD.trainer INFO: iter: 001140, lr: 0.00010, total_loss: 4.454 (5.259), reg_loss: 2.073 (2.489), cls_loss: 2.381 (2.770), time: 0.231 (0.247), eta: 8:10:00
+2023-04-07 14:59:18,855 SSD.trainer INFO: iter: 001150, lr: 0.00010, total_loss: 4.379 (5.252), reg_loss: 2.017 (2.485), cls_loss: 2.362 (2.767), time: 0.232 (0.247), eta: 8:09:42
+2023-04-07 14:59:21,168 SSD.trainer INFO: iter: 001160, lr: 0.00010, total_loss: 4.354 (5.244), reg_loss: 1.980 (2.481), cls_loss: 2.374 (2.763), time: 0.231 (0.247), eta: 8:09:23
+2023-04-07 14:59:23,513 SSD.trainer INFO: iter: 001170, lr: 0.00010, total_loss: 4.391 (5.237), reg_loss: 2.037 (2.477), cls_loss: 2.354 (2.760), time: 0.234 (0.247), eta: 8:09:07
+2023-04-07 14:59:25,803 SSD.trainer INFO: iter: 001180, lr: 0.00010, total_loss: 4.381 (5.229), reg_loss: 2.012 (2.473), cls_loss: 2.369 (2.756), time: 0.229 (0.247), eta: 8:08:47
+2023-04-07 14:59:28,124 SSD.trainer INFO: iter: 001190, lr: 0.00010, total_loss: 4.396 (5.222), reg_loss: 2.023 (2.469), cls_loss: 2.373 (2.753), time: 0.232 (0.247), eta: 8:08:30
+2023-04-07 14:59:30,477 SSD.trainer INFO: iter: 001200, lr: 0.00010, total_loss: 4.385 (5.215), reg_loss: 2.014 (2.465), cls_loss: 2.370 (2.750), time: 0.235 (0.247), eta: 8:08:16
+2023-04-07 14:59:32,877 SSD.trainer INFO: iter: 001210, lr: 0.00010, total_loss: 4.472 (5.209), reg_loss: 2.097 (2.462), cls_loss: 2.375 (2.747), time: 0.240 (0.247), eta: 8:08:07
+2023-04-07 14:59:35,259 SSD.trainer INFO: iter: 001220, lr: 0.00010, total_loss: 4.407 (5.203), reg_loss: 2.035 (2.459), cls_loss: 2.371 (2.744), time: 0.238 (0.246), eta: 8:07:56
+2023-04-07 14:59:37,686 SSD.trainer INFO: iter: 001230, lr: 0.00010, total_loss: 4.405 (5.196), reg_loss: 2.037 (2.455), cls_loss: 2.368 (2.741), time: 0.243 (0.246), eta: 8:07:50
+2023-04-07 14:59:40,067 SSD.trainer INFO: iter: 001240, lr: 0.00010, total_loss: 4.312 (5.189), reg_loss: 1.953 (2.451), cls_loss: 2.360 (2.738), time: 0.238 (0.246), eta: 8:07:40
+2023-04-07 14:59:42,491 SSD.trainer INFO: iter: 001250, lr: 0.00010, total_loss: 4.383 (5.183), reg_loss: 2.019 (2.448), cls_loss: 2.364 (2.735), time: 0.242 (0.246), eta: 8:07:34
+2023-04-07 14:59:44,895 SSD.trainer INFO: iter: 001260, lr: 0.00010, total_loss: 4.305 (5.176), reg_loss: 1.949 (2.444), cls_loss: 2.356 (2.732), time: 0.240 (0.246), eta: 8:07:25
+2023-04-07 14:59:47,281 SSD.trainer INFO: iter: 001270, lr: 0.00010, total_loss: 4.360 (5.169), reg_loss: 1.994 (2.440), cls_loss: 2.366 (2.729), time: 0.239 (0.246), eta: 8:07:16
+2023-04-07 14:59:49,677 SSD.trainer INFO: iter: 001280, lr: 0.00010, total_loss: 4.326 (5.163), reg_loss: 1.970 (2.437), cls_loss: 2.356 (2.726), time: 0.240 (0.246), eta: 8:07:07
+2023-04-07 14:59:52,011 SSD.trainer INFO: iter: 001290, lr: 0.00010, total_loss: 4.347 (5.156), reg_loss: 1.980 (2.433), cls_loss: 2.367 (2.723), time: 0.233 (0.246), eta: 8:06:52
+2023-04-07 14:59:54,347 SSD.trainer INFO: iter: 001300, lr: 0.00010, total_loss: 4.388 (5.150), reg_loss: 2.015 (2.430), cls_loss: 2.373 (2.720), time: 0.234 (0.246), eta: 8:06:39
+2023-04-07 14:59:56,634 SSD.trainer INFO: iter: 001310, lr: 0.00010, total_loss: 4.358 (5.144), reg_loss: 1.994 (2.427), cls_loss: 2.364 (2.718), time: 0.229 (0.246), eta: 8:06:21
+2023-04-07 14:59:58,869 SSD.trainer INFO: iter: 001320, lr: 0.00010, total_loss: 4.394 (5.139), reg_loss: 2.018 (2.423), cls_loss: 2.376 (2.715), time: 0.224 (0.246), eta: 8:05:58
+2023-04-07 15:00:01,197 SSD.trainer INFO: iter: 001330, lr: 0.00010, total_loss: 4.282 (5.132), reg_loss: 1.920 (2.420), cls_loss: 2.362 (2.712), time: 0.233 (0.246), eta: 8:05:45
+2023-04-07 15:00:03,521 SSD.trainer INFO: iter: 001340, lr: 0.00010, total_loss: 4.330 (5.126), reg_loss: 1.984 (2.416), cls_loss: 2.346 (2.710), time: 0.232 (0.245), eta: 8:05:30
+2023-04-07 15:00:05,838 SSD.trainer INFO: iter: 001350, lr: 0.00010, total_loss: 4.236 (5.120), reg_loss: 1.887 (2.413), cls_loss: 2.349 (2.707), time: 0.232 (0.245), eta: 8:05:16
+2023-04-07 15:00:08,154 SSD.trainer INFO: iter: 001360, lr: 0.00010, total_loss: 4.227 (5.113), reg_loss: 1.885 (2.409), cls_loss: 2.341 (2.704), time: 0.232 (0.245), eta: 8:05:01
+2023-04-07 15:00:10,467 SSD.trainer INFO: iter: 001370, lr: 0.00010, total_loss: 4.313 (5.107), reg_loss: 1.949 (2.405), cls_loss: 2.363 (2.702), time: 0.231 (0.245), eta: 8:04:47
+2023-04-07 15:00:12,841 SSD.trainer INFO: iter: 001380, lr: 0.00010, total_loss: 4.177 (5.100), reg_loss: 1.841 (2.401), cls_loss: 2.336 (2.699), time: 0.237 (0.245), eta: 8:04:38
+2023-04-07 15:00:15,253 SSD.trainer INFO: iter: 001390, lr: 0.00010, total_loss: 4.289 (5.095), reg_loss: 1.939 (2.398), cls_loss: 2.350 (2.697), time: 0.241 (0.245), eta: 8:04:32
+2023-04-07 15:00:17,676 SSD.trainer INFO: iter: 001400, lr: 0.00010, total_loss: 4.222 (5.088), reg_loss: 1.878 (2.394), cls_loss: 2.344 (2.694), time: 0.242 (0.245), eta: 8:04:27
+2023-04-07 15:00:20,119 SSD.trainer INFO: iter: 001410, lr: 0.00010, total_loss: 4.331 (5.083), reg_loss: 1.973 (2.391), cls_loss: 2.358 (2.692), time: 0.244 (0.245), eta: 8:04:24
+2023-04-07 15:00:22,529 SSD.trainer INFO: iter: 001420, lr: 0.00010, total_loss: 4.163 (5.077), reg_loss: 1.824 (2.387), cls_loss: 2.339 (2.689), time: 0.241 (0.245), eta: 8:04:18
+2023-04-07 15:00:24,922 SSD.trainer INFO: iter: 001430, lr: 0.00010, total_loss: 4.381 (5.072), reg_loss: 1.998 (2.384), cls_loss: 2.383 (2.687), time: 0.239 (0.245), eta: 8:04:11
+2023-04-07 15:00:27,302 SSD.trainer INFO: iter: 001440, lr: 0.00010, total_loss: 4.196 (5.066), reg_loss: 1.852 (2.381), cls_loss: 2.344 (2.685), time: 0.238 (0.245), eta: 8:04:02
+2023-04-07 15:00:29,645 SSD.trainer INFO: iter: 001450, lr: 0.00010, total_loss: 4.366 (5.061), reg_loss: 1.984 (2.378), cls_loss: 2.383 (2.683), time: 0.234 (0.245), eta: 8:03:51
+2023-04-07 15:00:32,020 SSD.trainer INFO: iter: 001460, lr: 0.00010, total_loss: 4.168 (5.055), reg_loss: 1.825 (2.374), cls_loss: 2.343 (2.680), time: 0.238 (0.245), eta: 8:03:43
+2023-04-07 15:00:34,352 SSD.trainer INFO: iter: 001470, lr: 0.00010, total_loss: 4.199 (5.049), reg_loss: 1.857 (2.371), cls_loss: 2.341 (2.678), time: 0.233 (0.245), eta: 8:03:31
+2023-04-07 15:00:36,677 SSD.trainer INFO: iter: 001480, lr: 0.00010, total_loss: 4.272 (5.044), reg_loss: 1.913 (2.368), cls_loss: 2.359 (2.676), time: 0.232 (0.245), eta: 8:03:19
+2023-04-07 15:00:38,978 SSD.trainer INFO: iter: 001490, lr: 0.00010, total_loss: 4.312 (5.039), reg_loss: 1.956 (2.365), cls_loss: 2.355 (2.674), time: 0.230 (0.245), eta: 8:03:05
+2023-04-07 15:00:41,307 SSD.trainer INFO: iter: 001500, lr: 0.00010, total_loss: 4.219 (5.033), reg_loss: 1.890 (2.362), cls_loss: 2.330 (2.671), time: 0.233 (0.245), eta: 8:02:53
+2023-04-07 15:00:43,614 SSD.trainer INFO: iter: 001510, lr: 0.00010, total_loss: 4.248 (5.028), reg_loss: 1.887 (2.359), cls_loss: 2.361 (2.669), time: 0.231 (0.244), eta: 8:02:40
+2023-04-07 15:00:45,933 SSD.trainer INFO: iter: 001520, lr: 0.00010, total_loss: 4.286 (5.023), reg_loss: 1.931 (2.356), cls_loss: 2.356 (2.667), time: 0.232 (0.244), eta: 8:02:28
+2023-04-07 15:00:48,275 SSD.trainer INFO: iter: 001530, lr: 0.00010, total_loss: 4.156 (5.017), reg_loss: 1.810 (2.352), cls_loss: 2.346 (2.665), time: 0.234 (0.244), eta: 8:02:17
+2023-04-07 15:00:50,612 SSD.trainer INFO: iter: 001540, lr: 0.00010, total_loss: 4.163 (5.012), reg_loss: 1.811 (2.349), cls_loss: 2.352 (2.663), time: 0.234 (0.244), eta: 8:02:07
+2023-04-07 15:00:52,936 SSD.trainer INFO: iter: 001550, lr: 0.00010, total_loss: 4.201 (5.007), reg_loss: 1.826 (2.345), cls_loss: 2.374 (2.661), time: 0.232 (0.244), eta: 8:01:55
+2023-04-07 15:00:55,279 SSD.trainer INFO: iter: 001560, lr: 0.00010, total_loss: 4.154 (5.001), reg_loss: 1.808 (2.342), cls_loss: 2.346 (2.659), time: 0.234 (0.244), eta: 8:01:45
+2023-04-07 15:00:57,650 SSD.trainer INFO: iter: 001570, lr: 0.00010, total_loss: 4.131 (4.996), reg_loss: 1.780 (2.338), cls_loss: 2.350 (2.657), time: 0.237 (0.244), eta: 8:01:38
+2023-04-07 15:01:00,066 SSD.trainer INFO: iter: 001580, lr: 0.00010, total_loss: 4.097 (4.990), reg_loss: 1.749 (2.335), cls_loss: 2.347 (2.655), time: 0.242 (0.244), eta: 8:01:33
+2023-04-07 15:01:02,456 SSD.trainer INFO: iter: 001590, lr: 0.00010, total_loss: 4.214 (4.985), reg_loss: 1.848 (2.331), cls_loss: 2.366 (2.654), time: 0.239 (0.244), eta: 8:01:27
+2023-04-07 15:01:04,872 SSD.trainer INFO: iter: 001600, lr: 0.00010, total_loss: 4.147 (4.980), reg_loss: 1.808 (2.328), cls_loss: 2.338 (2.652), time: 0.242 (0.244), eta: 8:01:23
+2023-04-07 15:01:07,186 SSD.trainer INFO: iter: 001610, lr: 0.00010, total_loss: 4.185 (4.975), reg_loss: 1.829 (2.325), cls_loss: 2.356 (2.650), time: 0.231 (0.244), eta: 8:01:11
+2023-04-07 15:01:09,549 SSD.trainer INFO: iter: 001620, lr: 0.00010, total_loss: 4.126 (4.970), reg_loss: 1.791 (2.322), cls_loss: 2.335 (2.648), time: 0.236 (0.244), eta: 8:01:03
+2023-04-07 15:01:11,871 SSD.trainer INFO: iter: 001630, lr: 0.00010, total_loss: 4.161 (4.965), reg_loss: 1.813 (2.319), cls_loss: 2.348 (2.646), time: 0.232 (0.244), eta: 8:00:53
+2023-04-07 15:01:14,208 SSD.trainer INFO: iter: 001640, lr: 0.00010, total_loss: 4.191 (4.960), reg_loss: 1.854 (2.316), cls_loss: 2.337 (2.644), time: 0.234 (0.244), eta: 8:00:43
+2023-04-07 15:01:16,565 SSD.trainer INFO: iter: 001650, lr: 0.00010, total_loss: 4.178 (4.955), reg_loss: 1.842 (2.313), cls_loss: 2.336 (2.642), time: 0.236 (0.244), eta: 8:00:35
+2023-04-07 15:01:18,948 SSD.trainer INFO: iter: 001660, lr: 0.00010, total_loss: 4.189 (4.951), reg_loss: 1.831 (2.310), cls_loss: 2.358 (2.641), time: 0.238 (0.244), eta: 8:00:28
+2023-04-07 15:01:21,308 SSD.trainer INFO: iter: 001670, lr: 0.00010, total_loss: 4.000 (4.945), reg_loss: 1.668 (2.306), cls_loss: 2.332 (2.639), time: 0.236 (0.244), eta: 8:00:21
+2023-04-07 15:01:23,658 SSD.trainer INFO: iter: 001680, lr: 0.00010, total_loss: 4.220 (4.941), reg_loss: 1.866 (2.304), cls_loss: 2.353 (2.637), time: 0.235 (0.244), eta: 8:00:12
+2023-04-07 15:01:26,027 SSD.trainer INFO: iter: 001690, lr: 0.00010, total_loss: 4.020 (4.935), reg_loss: 1.702 (2.300), cls_loss: 2.318 (2.635), time: 0.237 (0.243), eta: 8:00:05
+2023-04-07 15:01:28,378 SSD.trainer INFO: iter: 001700, lr: 0.00010, total_loss: 4.120 (4.930), reg_loss: 1.772 (2.297), cls_loss: 2.348 (2.633), time: 0.235 (0.243), eta: 7:59:57
+2023-04-07 15:01:30,724 SSD.trainer INFO: iter: 001710, lr: 0.00010, total_loss: 4.101 (4.926), reg_loss: 1.767 (2.294), cls_loss: 2.334 (2.632), time: 0.235 (0.243), eta: 7:59:48
+2023-04-07 15:01:33,080 SSD.trainer INFO: iter: 001720, lr: 0.00010, total_loss: 4.147 (4.921), reg_loss: 1.795 (2.291), cls_loss: 2.353 (2.630), time: 0.236 (0.243), eta: 7:59:40
+2023-04-07 15:01:35,477 SSD.trainer INFO: iter: 001730, lr: 0.00010, total_loss: 4.125 (4.916), reg_loss: 1.783 (2.288), cls_loss: 2.342 (2.628), time: 0.240 (0.243), eta: 7:59:36
+2023-04-07 15:01:37,854 SSD.trainer INFO: iter: 001740, lr: 0.00010, total_loss: 4.109 (4.912), reg_loss: 1.763 (2.285), cls_loss: 2.346 (2.627), time: 0.238 (0.243), eta: 7:59:29
+2023-04-07 15:01:40,281 SSD.trainer INFO: iter: 001750, lr: 0.00010, total_loss: 4.086 (4.907), reg_loss: 1.754 (2.282), cls_loss: 2.332 (2.625), time: 0.243 (0.243), eta: 7:59:27
+2023-04-07 15:01:42,697 SSD.trainer INFO: iter: 001760, lr: 0.00010, total_loss: 4.052 (4.902), reg_loss: 1.722 (2.279), cls_loss: 2.330 (2.623), time: 0.242 (0.243), eta: 7:59:23
+2023-04-07 15:01:45,128 SSD.trainer INFO: iter: 001770, lr: 0.00010, total_loss: 4.176 (4.898), reg_loss: 1.827 (2.276), cls_loss: 2.349 (2.622), time: 0.243 (0.243), eta: 7:59:20
+2023-04-07 15:01:47,527 SSD.trainer INFO: iter: 001780, lr: 0.00010, total_loss: 4.011 (4.893), reg_loss: 1.705 (2.273), cls_loss: 2.306 (2.620), time: 0.240 (0.243), eta: 7:59:16
+2023-04-07 15:01:49,885 SSD.trainer INFO: iter: 001790, lr: 0.00010, total_loss: 4.066 (4.888), reg_loss: 1.741 (2.270), cls_loss: 2.325 (2.618), time: 0.236 (0.243), eta: 7:59:08
+2023-04-07 15:01:52,265 SSD.trainer INFO: iter: 001800, lr: 0.00010, total_loss: 4.084 (4.884), reg_loss: 1.772 (2.267), cls_loss: 2.312 (2.617), time: 0.238 (0.243), eta: 7:59:03
+2023-04-07 15:01:54,653 SSD.trainer INFO: iter: 001810, lr: 0.00010, total_loss: 4.154 (4.880), reg_loss: 1.806 (2.265), cls_loss: 2.348 (2.615), time: 0.239 (0.243), eta: 7:58:57
+2023-04-07 15:01:57,039 SSD.trainer INFO: iter: 001820, lr: 0.00010, total_loss: 4.057 (4.875), reg_loss: 1.743 (2.262), cls_loss: 2.313 (2.614), time: 0.239 (0.243), eta: 7:58:52
+2023-04-07 15:01:59,431 SSD.trainer INFO: iter: 001830, lr: 0.00010, total_loss: 3.973 (4.871), reg_loss: 1.644 (2.259), cls_loss: 2.330 (2.612), time: 0.239 (0.243), eta: 7:58:47
+2023-04-07 15:02:01,845 SSD.trainer INFO: iter: 001840, lr: 0.00010, total_loss: 3.939 (4.865), reg_loss: 1.624 (2.255), cls_loss: 2.315 (2.610), time: 0.242 (0.243), eta: 7:58:43
+2023-04-07 15:02:04,244 SSD.trainer INFO: iter: 001850, lr: 0.00010, total_loss: 4.046 (4.861), reg_loss: 1.718 (2.252), cls_loss: 2.327 (2.609), time: 0.240 (0.243), eta: 7:58:39
+2023-04-07 15:02:06,645 SSD.trainer INFO: iter: 001860, lr: 0.00010, total_loss: 4.051 (4.857), reg_loss: 1.721 (2.249), cls_loss: 2.329 (2.607), time: 0.240 (0.243), eta: 7:58:35
+2023-04-07 15:02:09,004 SSD.trainer INFO: iter: 001870, lr: 0.00010, total_loss: 4.010 (4.852), reg_loss: 1.711 (2.246), cls_loss: 2.299 (2.606), time: 0.236 (0.243), eta: 7:58:28
+2023-04-07 15:02:11,354 SSD.trainer INFO: iter: 001880, lr: 0.00010, total_loss: 4.022 (4.848), reg_loss: 1.675 (2.243), cls_loss: 2.347 (2.604), time: 0.235 (0.243), eta: 7:58:20
+2023-04-07 15:02:13,726 SSD.trainer INFO: iter: 001890, lr: 0.00010, total_loss: 4.111 (4.844), reg_loss: 1.765 (2.241), cls_loss: 2.347 (2.603), time: 0.237 (0.243), eta: 7:58:14
+2023-04-07 15:02:16,100 SSD.trainer INFO: iter: 001900, lr: 0.00010, total_loss: 4.081 (4.840), reg_loss: 1.756 (2.238), cls_loss: 2.325 (2.602), time: 0.237 (0.243), eta: 7:58:08
+2023-04-07 15:02:18,449 SSD.trainer INFO: iter: 001910, lr: 0.00010, total_loss: 3.988 (4.835), reg_loss: 1.682 (2.235), cls_loss: 2.307 (2.600), time: 0.235 (0.243), eta: 7:58:01
+2023-04-07 15:02:20,728 SSD.trainer INFO: iter: 001920, lr: 0.00010, total_loss: 4.050 (4.831), reg_loss: 1.714 (2.233), cls_loss: 2.336 (2.599), time: 0.228 (0.243), eta: 7:57:49
+2023-04-07 15:02:23,082 SSD.trainer INFO: iter: 001930, lr: 0.00010, total_loss: 4.028 (4.827), reg_loss: 1.691 (2.230), cls_loss: 2.337 (2.597), time: 0.235 (0.243), eta: 7:57:42
+2023-04-07 15:02:25,430 SSD.trainer INFO: iter: 001940, lr: 0.00010, total_loss: 3.917 (4.822), reg_loss: 1.612 (2.227), cls_loss: 2.305 (2.596), time: 0.235 (0.243), eta: 7:57:35
+2023-04-07 15:02:27,735 SSD.trainer INFO: iter: 001950, lr: 0.00010, total_loss: 4.025 (4.818), reg_loss: 1.691 (2.224), cls_loss: 2.334 (2.594), time: 0.231 (0.243), eta: 7:57:25
+2023-04-07 15:02:30,055 SSD.trainer INFO: iter: 001960, lr: 0.00010, total_loss: 3.998 (4.814), reg_loss: 1.681 (2.221), cls_loss: 2.318 (2.593), time: 0.232 (0.243), eta: 7:57:16
+2023-04-07 15:02:32,280 SSD.trainer INFO: iter: 001970, lr: 0.00010, total_loss: 3.946 (4.810), reg_loss: 1.634 (2.218), cls_loss: 2.312 (2.592), time: 0.222 (0.243), eta: 7:57:02
+2023-04-07 15:02:34,629 SSD.trainer INFO: iter: 001980, lr: 0.00010, total_loss: 4.025 (4.806), reg_loss: 1.683 (2.215), cls_loss: 2.342 (2.590), time: 0.235 (0.242), eta: 7:56:55
+2023-04-07 15:02:36,994 SSD.trainer INFO: iter: 001990, lr: 0.00010, total_loss: 3.891 (4.801), reg_loss: 1.579 (2.212), cls_loss: 2.313 (2.589), time: 0.237 (0.242), eta: 7:56:49
+2023-04-07 15:02:39,349 SSD.trainer INFO: iter: 002000, lr: 0.00010, total_loss: 3.941 (4.797), reg_loss: 1.610 (2.209), cls_loss: 2.331 (2.588), time: 0.235 (0.242), eta: 7:56:42
+2023-04-07 15:02:41,739 SSD.trainer INFO: iter: 002010, lr: 0.00010, total_loss: 3.983 (4.793), reg_loss: 1.660 (2.207), cls_loss: 2.323 (2.586), time: 0.239 (0.242), eta: 7:56:38
+2023-04-07 15:02:44,134 SSD.trainer INFO: iter: 002020, lr: 0.00010, total_loss: 3.980 (4.789), reg_loss: 1.650 (2.204), cls_loss: 2.330 (2.585), time: 0.239 (0.242), eta: 7:56:34
+2023-04-07 15:02:46,487 SSD.trainer INFO: iter: 002030, lr: 0.00010, total_loss: 3.987 (4.785), reg_loss: 1.644 (2.201), cls_loss: 2.343 (2.584), time: 0.235 (0.242), eta: 7:56:27
+2023-04-07 15:02:48,873 SSD.trainer INFO: iter: 002040, lr: 0.00010, total_loss: 3.922 (4.781), reg_loss: 1.609 (2.198), cls_loss: 2.312 (2.583), time: 0.239 (0.242), eta: 7:56:23
+2023-04-07 15:02:51,269 SSD.trainer INFO: iter: 002050, lr: 0.00010, total_loss: 3.961 (4.777), reg_loss: 1.637 (2.195), cls_loss: 2.325 (2.581), time: 0.240 (0.242), eta: 7:56:19
+2023-04-07 15:02:53,600 SSD.trainer INFO: iter: 002060, lr: 0.00010, total_loss: 4.029 (4.773), reg_loss: 1.716 (2.193), cls_loss: 2.313 (2.580), time: 0.233 (0.242), eta: 7:56:11
+2023-04-07 15:02:55,920 SSD.trainer INFO: iter: 002070, lr: 0.00010, total_loss: 3.961 (4.769), reg_loss: 1.676 (2.191), cls_loss: 2.286 (2.579), time: 0.232 (0.242), eta: 7:56:03
+2023-04-07 15:02:58,246 SSD.trainer INFO: iter: 002080, lr: 0.00010, total_loss: 3.984 (4.765), reg_loss: 1.689 (2.188), cls_loss: 2.295 (2.577), time: 0.233 (0.242), eta: 7:55:55
+2023-04-07 15:03:00,552 SSD.trainer INFO: iter: 002090, lr: 0.00010, total_loss: 3.907 (4.761), reg_loss: 1.619 (2.185), cls_loss: 2.288 (2.576), time: 0.231 (0.242), eta: 7:55:46
+2023-04-07 15:03:02,862 SSD.trainer INFO: iter: 002100, lr: 0.00010, total_loss: 4.015 (4.758), reg_loss: 1.694 (2.183), cls_loss: 2.321 (2.575), time: 0.231 (0.242), eta: 7:55:37
+2023-04-07 15:03:05,182 SSD.trainer INFO: iter: 002110, lr: 0.00010, total_loss: 3.842 (4.753), reg_loss: 1.543 (2.180), cls_loss: 2.299 (2.573), time: 0.232 (0.242), eta: 7:55:29
+2023-04-07 15:03:07,483 SSD.trainer INFO: iter: 002120, lr: 0.00010, total_loss: 3.867 (4.749), reg_loss: 1.567 (2.177), cls_loss: 2.301 (2.572), time: 0.230 (0.242), eta: 7:55:20
+2023-04-07 15:03:09,801 SSD.trainer INFO: iter: 002130, lr: 0.00010, total_loss: 3.942 (4.745), reg_loss: 1.644 (2.175), cls_loss: 2.298 (2.571), time: 0.232 (0.242), eta: 7:55:12
+2023-04-07 15:03:12,106 SSD.trainer INFO: iter: 002140, lr: 0.00010, total_loss: 3.944 (4.742), reg_loss: 1.645 (2.172), cls_loss: 2.300 (2.569), time: 0.230 (0.242), eta: 7:55:04
+2023-04-07 15:03:14,427 SSD.trainer INFO: iter: 002150, lr: 0.00010, total_loss: 4.015 (4.738), reg_loss: 1.696 (2.170), cls_loss: 2.320 (2.568), time: 0.232 (0.242), eta: 7:54:56
+2023-04-07 15:03:16,796 SSD.trainer INFO: iter: 002160, lr: 0.00010, total_loss: 3.870 (4.734), reg_loss: 1.578 (2.167), cls_loss: 2.293 (2.567), time: 0.237 (0.242), eta: 7:54:51
+2023-04-07 15:03:19,190 SSD.trainer INFO: iter: 002170, lr: 0.00010, total_loss: 3.927 (4.730), reg_loss: 1.639 (2.165), cls_loss: 2.289 (2.566), time: 0.239 (0.242), eta: 7:54:47
+2023-04-07 15:03:21,561 SSD.trainer INFO: iter: 002180, lr: 0.00010, total_loss: 3.837 (4.726), reg_loss: 1.559 (2.162), cls_loss: 2.278 (2.564), time: 0.237 (0.242), eta: 7:54:42
+2023-04-07 15:03:23,988 SSD.trainer INFO: iter: 002190, lr: 0.00010, total_loss: 3.887 (4.723), reg_loss: 1.590 (2.159), cls_loss: 2.296 (2.563), time: 0.243 (0.242), eta: 7:54:40
+2023-04-07 15:03:26,374 SSD.trainer INFO: iter: 002200, lr: 0.00010, total_loss: 4.113 (4.720), reg_loss: 1.775 (2.158), cls_loss: 2.338 (2.562), time: 0.239 (0.242), eta: 7:54:36
+2023-04-07 15:03:28,773 SSD.trainer INFO: iter: 002210, lr: 0.00010, total_loss: 3.976 (4.716), reg_loss: 1.680 (2.155), cls_loss: 2.296 (2.561), time: 0.240 (0.242), eta: 7:54:33
+2023-04-07 15:03:31,167 SSD.trainer INFO: iter: 002220, lr: 0.00010, total_loss: 3.875 (4.713), reg_loss: 1.565 (2.153), cls_loss: 2.310 (2.560), time: 0.239 (0.242), eta: 7:54:29
+2023-04-07 15:03:33,564 SSD.trainer INFO: iter: 002230, lr: 0.00010, total_loss: 3.896 (4.709), reg_loss: 1.596 (2.150), cls_loss: 2.300 (2.559), time: 0.240 (0.242), eta: 7:54:26
+2023-04-07 15:03:35,922 SSD.trainer INFO: iter: 002240, lr: 0.00010, total_loss: 3.904 (4.705), reg_loss: 1.604 (2.148), cls_loss: 2.300 (2.557), time: 0.236 (0.242), eta: 7:54:20
+2023-04-07 15:03:38,246 SSD.trainer INFO: iter: 002250, lr: 0.00010, total_loss: 3.947 (4.702), reg_loss: 1.622 (2.146), cls_loss: 2.325 (2.556), time: 0.232 (0.242), eta: 7:54:13
+2023-04-07 15:03:40,540 SSD.trainer INFO: iter: 002260, lr: 0.00010, total_loss: 3.900 (4.698), reg_loss: 1.600 (2.143), cls_loss: 2.300 (2.555), time: 0.229 (0.242), eta: 7:54:04
+2023-04-07 15:03:42,874 SSD.trainer INFO: iter: 002270, lr: 0.00010, total_loss: 3.809 (4.695), reg_loss: 1.542 (2.140), cls_loss: 2.267 (2.554), time: 0.233 (0.242), eta: 7:53:57
+2023-04-07 15:03:45,189 SSD.trainer INFO: iter: 002280, lr: 0.00010, total_loss: 3.920 (4.691), reg_loss: 1.638 (2.138), cls_loss: 2.282 (2.553), time: 0.232 (0.242), eta: 7:53:50
+2023-04-07 15:03:47,502 SSD.trainer INFO: iter: 002290, lr: 0.00010, total_loss: 3.798 (4.687), reg_loss: 1.516 (2.136), cls_loss: 2.281 (2.552), time: 0.231 (0.241), eta: 7:53:42
+2023-04-07 15:03:49,813 SSD.trainer INFO: iter: 002300, lr: 0.00010, total_loss: 3.903 (4.684), reg_loss: 1.589 (2.133), cls_loss: 2.315 (2.551), time: 0.231 (0.241), eta: 7:53:34
+2023-04-07 15:03:52,136 SSD.trainer INFO: iter: 002310, lr: 0.00010, total_loss: 3.917 (4.681), reg_loss: 1.603 (2.131), cls_loss: 2.314 (2.550), time: 0.232 (0.241), eta: 7:53:27
+2023-04-07 15:03:54,469 SSD.trainer INFO: iter: 002320, lr: 0.00010, total_loss: 3.956 (4.677), reg_loss: 1.653 (2.129), cls_loss: 2.303 (2.549), time: 0.233 (0.241), eta: 7:53:21
+2023-04-07 15:03:56,814 SSD.trainer INFO: iter: 002330, lr: 0.00010, total_loss: 3.891 (4.674), reg_loss: 1.587 (2.127), cls_loss: 2.304 (2.547), time: 0.234 (0.241), eta: 7:53:15
+2023-04-07 15:03:59,175 SSD.trainer INFO: iter: 002340, lr: 0.00010, total_loss: 3.863 (4.671), reg_loss: 1.576 (2.124), cls_loss: 2.287 (2.546), time: 0.236 (0.241), eta: 7:53:10
+2023-04-07 15:04:01,492 SSD.trainer INFO: iter: 002350, lr: 0.00010, total_loss: 3.846 (4.667), reg_loss: 1.567 (2.122), cls_loss: 2.278 (2.545), time: 0.232 (0.241), eta: 7:53:03
+2023-04-07 15:04:03,850 SSD.trainer INFO: iter: 002360, lr: 0.00010, total_loss: 3.807 (4.663), reg_loss: 1.508 (2.119), cls_loss: 2.299 (2.544), time: 0.236 (0.241), eta: 7:52:57
+2023-04-07 15:04:06,210 SSD.trainer INFO: iter: 002370, lr: 0.00010, total_loss: 3.859 (4.660), reg_loss: 1.563 (2.117), cls_loss: 2.296 (2.543), time: 0.236 (0.241), eta: 7:52:52
+2023-04-07 15:04:08,613 SSD.trainer INFO: iter: 002380, lr: 0.00010, total_loss: 3.912 (4.657), reg_loss: 1.622 (2.115), cls_loss: 2.291 (2.542), time: 0.240 (0.241), eta: 7:52:50
+2023-04-07 15:04:11,012 SSD.trainer INFO: iter: 002390, lr: 0.00010, total_loss: 3.763 (4.653), reg_loss: 1.506 (2.112), cls_loss: 2.257 (2.541), time: 0.240 (0.241), eta: 7:52:47
+2023-04-07 15:04:13,410 SSD.trainer INFO: iter: 002400, lr: 0.00010, total_loss: 3.897 (4.650), reg_loss: 1.608 (2.110), cls_loss: 2.289 (2.540), time: 0.240 (0.241), eta: 7:52:43
+2023-04-07 15:04:15,773 SSD.trainer INFO: iter: 002410, lr: 0.00010, total_loss: 3.836 (4.647), reg_loss: 1.553 (2.108), cls_loss: 2.283 (2.539), time: 0.236 (0.241), eta: 7:52:39
+2023-04-07 15:04:18,153 SSD.trainer INFO: iter: 002420, lr: 0.00010, total_loss: 3.742 (4.643), reg_loss: 1.464 (2.105), cls_loss: 2.278 (2.538), time: 0.238 (0.241), eta: 7:52:35
+2023-04-07 15:04:20,519 SSD.trainer INFO: iter: 002430, lr: 0.00010, total_loss: 3.850 (4.640), reg_loss: 1.535 (2.103), cls_loss: 2.315 (2.537), time: 0.236 (0.241), eta: 7:52:30
+2023-04-07 15:04:22,849 SSD.trainer INFO: iter: 002440, lr: 0.00010, total_loss: 3.891 (4.637), reg_loss: 1.596 (2.101), cls_loss: 2.296 (2.536), time: 0.233 (0.241), eta: 7:52:24
+2023-04-07 15:04:25,218 SSD.trainer INFO: iter: 002450, lr: 0.00010, total_loss: 3.825 (4.633), reg_loss: 1.530 (2.098), cls_loss: 2.295 (2.535), time: 0.237 (0.241), eta: 7:52:19
+2023-04-07 15:04:27,547 SSD.trainer INFO: iter: 002460, lr: 0.00010, total_loss: 3.763 (4.630), reg_loss: 1.500 (2.096), cls_loss: 2.263 (2.534), time: 0.233 (0.241), eta: 7:52:13
+2023-04-07 15:04:29,839 SSD.trainer INFO: iter: 002470, lr: 0.00010, total_loss: 3.833 (4.626), reg_loss: 1.543 (2.094), cls_loss: 2.290 (2.533), time: 0.229 (0.241), eta: 7:52:05
+2023-04-07 15:04:32,151 SSD.trainer INFO: iter: 002480, lr: 0.00010, total_loss: 3.900 (4.624), reg_loss: 1.564 (2.092), cls_loss: 2.336 (2.532), time: 0.231 (0.241), eta: 7:51:58
+2023-04-07 15:04:34,512 SSD.trainer INFO: iter: 002490, lr: 0.00010, total_loss: 3.883 (4.621), reg_loss: 1.587 (2.090), cls_loss: 2.296 (2.531), time: 0.236 (0.241), eta: 7:51:53
+2023-04-07 15:04:36,867 SSD.trainer INFO: iter: 002500, lr: 0.00010, total_loss: 3.784 (4.617), reg_loss: 1.516 (2.087), cls_loss: 2.268 (2.530), time: 0.236 (0.241), eta: 7:51:48
+2023-04-07 15:04:36,998 SSD.trainer INFO: Saving checkpoint to outputs/vgg_ssd300_publicpolyp/model_002500.pth
+2023-04-07 15:04:37,405 SSD.inference INFO: Evaluating polyp_test dataset(12933 images):

@@ -1,0 +1,1 @@
+outputs/vgg_ssd300_publicpolyp/model_002500.pth
