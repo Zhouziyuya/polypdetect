@@ -214,7 +214,7 @@ def run(
     
     for batch_i, a in enumerate(pbar):
         if consis_mode is not None:
-            im, _,_,targets, paths, shapes = a
+            im, _,_,_,targets, paths, shapes = a
         else:
             im, targets, paths, shapes = a
         callbacks.run('on_val_batch_start')
@@ -296,6 +296,8 @@ def run(
     stats = [torch.cat(x, 0).cpu().numpy() for x in zip(*stats)]  # to numpy
     if len(stats) and stats[0].any():
         tp, fp, p, r, f1, ap, ap_class = ap_per_class(*stats, plot=plots, save_dir=save_dir, names=names)
+
+
         ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
         mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
     nt = np.bincount(stats[3].astype(int), minlength=nc)  # number of targets per class
@@ -356,7 +358,7 @@ def run(
     maps = np.zeros(nc) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]
-    return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
+    return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t, (p,r,ap50)
 
 
 def parse_opt():
@@ -364,14 +366,14 @@ def parse_opt():
     parser.add_argument('--consis_mode', type=str, default='', help='lr or ud, left and right or up and down')
     parser.add_argument('--data', type=str, default='data/renji.yaml', help='dataset.yaml path')
     # parser.add_argument('--data', type=str, default='data/public_polyp.yaml', help='dataset.yaml path')
-    parser.add_argument('--weights', nargs='+', type=str, default='runs/train/renji_conv3/weights/best.pt', help='model path(s)')
-    parser.add_argument('--batch-size', type=int, default=32, help='batch size')
+    parser.add_argument('--weights', nargs='+', type=str, default='runs/train/renji_focalloss_delinfo_patient_level_abnormal3/weights/best.pt', help='model path(s)')
+    parser.add_argument('--batch-size', type=int, default=64, help='batch size')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.001, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.6, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=300, help='maximum detections per image')
     parser.add_argument('--task', default='test', help='train, val, test, speed or study')
-    parser.add_argument('--device', default='1', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='2', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
